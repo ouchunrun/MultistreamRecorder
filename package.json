@@ -14,10 +14,5 @@
     "eslint-plugin-html": "^6.0.2",
     "eslint-plugin-markdown": "^1.0.2",
     "standard": "*"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "standard --verbose | snazzy"
-    }
   }
 }
