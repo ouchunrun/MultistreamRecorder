@@ -1,0 +1,7 @@
+/bin
+/.project
+/.project.bak
+/.externalToolBuilders/
+/.settings/
+/node_modules/
+.idea/

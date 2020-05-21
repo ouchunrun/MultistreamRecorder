@@ -1,0 +1,23 @@
+{
+  "name": "MSRecorder",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "standard && node my-tests.js"
+  },
+  "standard": {},
+  "devDependencies": {
+    "eslint-plugin-html": "^6.0.2",
+    "eslint-plugin-markdown": "^1.0.2",
+    "standard": "*"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "standard --verbose | snazzy"
+    }
+  }
+}
