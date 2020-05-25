@@ -1,43 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>MediaStreamRecorder</title>
-    <script src="./src/MediaStreamRecorder.js"></script>
-    <script src="./src/adapter-latest.js"></script>
-    <style>
-        body{
-            background: #8ab1ad;
-        }
-        button{
-            min-width: 100px;
-            height: 30px;
-        }
-        video{
-            width: 100%;
-        }
-    </style>
+  <title>MediaStreamRecorder</title>
+  <meta charset="utf-8">
+  <link rel="shortcut icon" href="#"/>
+  <script src="./src/multiStreamRecorder.js"></script>
+  <script src="./src/adapter-latest.js"></script>
+  <style>
+    body {
+      background: #8ab1ad;
+    }
+
+    button {
+      min-width: 100px;
+      height: 30px;
+    }
+
+    video {
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
-    <article>
-        <div class="github-stargazers"></div>
-        <section class="experiment" style="padding: 5px;">
-            <label for="time-interval">Time Interval (milliseconds):</label>
-            <input type="text" id="time-interval" value="5000">ms
-            <hr>
-            <button id="start-recording">Start</button>
-            <button id="stop-recording" disabled>Stop</button>
+<article>
+  <div class="github-stargazers"></div>
+  <section class="experiment" style="padding: 5px;">
+    <hr>
+    <label for="time-interval">Time Interval (milliseconds):</label>
+    <input type="text" id="time-interval" value="360000">ms
+    <hr>
 
-            <button id="pause-recording" disabled>Pause</button>
-            <button id="resume-recording" disabled>Resume</button>
-			
-			<button id="add-stream" disabled>Add another video</button>
-        </section>
+    <button id="start-recording" onclick="_startRecording()">Start</button>
+    <button id="stop-recording" onclick="_stopRecording()">Stop</button>
 
-        <section class="experiment">
-            <div id="container"></div>
-        </section>
-    </article>
+    <button id="add-stream" onclick="_addStream()">Add another video</button>
+  </section>
 
-    <script type="text/javascript" src="index.js"></script>
+  <section class="experiment">
+    <div id="mCSB_2"></div>
+  </section>
+</article>
+
+<script type="text/javascript" src="src/index.js"></script>
 </body>
 </html>

@@ -1055,12 +1055,12 @@ function MediaRecorderWrapper (mediaStream) {
   var self = this
 
   /**
-     * This method records MediaStream.
-     * @method
-     * @memberof MediaStreamRecorder
-     * @example
-     * recorder.start(5000);
-     */
+   * This method records MediaStream.
+   * @method
+   * @memberof MediaStreamRecorder
+   * @example
+   * recorder.start(5000);
+   */
   this.start = function (timeSlice, __disableLogs) {
     this.timeSlice = timeSlice || 5000
 
@@ -1222,15 +1222,15 @@ function MediaRecorderWrapper (mediaStream) {
   }
 
   /**
-     * This method stops recording MediaStream.
-     * @param {function} callback - Callback function, that is used to pass recorded blob back to the callee.
-     * @method
-     * @memberof MediaStreamRecorder
-     * @example
-     * recorder.stop(function(blob) {
-     *     video.src = URL.createObjectURL(blob);
-     * });
-     */
+   * This method stops recording MediaStream.
+   * @param {function} callback - Callback function, that is used to pass recorded blob back to the callee.
+   * @method
+   * @memberof MediaStreamRecorder
+   * @example
+   * recorder.stop(function(blob) {
+   *     video.src = URL.createObjectURL(blob);
+   * });
+   */
   this.stop = function (callback) {
     if (!mediaRecorder) {
       return
@@ -1255,12 +1255,12 @@ function MediaRecorderWrapper (mediaStream) {
   }
 
   /**
-     * This method pauses the recording process.
-     * @method
-     * @memberof MediaStreamRecorder
-     * @example
-     * recorder.pause();
-     */
+   * This method pauses the recording process.
+   * @method
+   * @memberof MediaStreamRecorder
+   * @example
+   * recorder.pause();
+   */
   this.pause = function () {
     if (!mediaRecorder) {
       return
@@ -1274,23 +1274,23 @@ function MediaRecorderWrapper (mediaStream) {
   }
 
   /**
-     * The recorded blobs are passed over this event.
-     * @event
-     * @memberof MediaStreamRecorder
-     * @example
-     * recorder.ondataavailable = function(data) {};
-     */
+   * The recorded blobs are passed over this event.
+   * @event
+   * @memberof MediaStreamRecorder
+   * @example
+   * recorder.ondataavailable = function(data) {};
+   */
   this.ondataavailable = function (blob) {
     console.log('recorded-blob', blob)
   }
 
   /**
-     * This method resumes the recording process.
-     * @method
-     * @memberof MediaStreamRecorder
-     * @example
-     * recorder.resume();
-     */
+   * This method resumes the recording process.
+   * @method
+   * @memberof MediaStreamRecorder
+   * @example
+   * recorder.resume();
+   */
   this.resume = function () {
     if (this.dontFireOnDataAvailableEvent) {
       this.dontFireOnDataAvailableEvent = false
@@ -1312,12 +1312,12 @@ function MediaRecorderWrapper (mediaStream) {
   }
 
   /**
-     * This method resets currently recorded data.
-     * @method
-     * @memberof MediaStreamRecorder
-     * @example
-     * recorder.clearRecordedData();
-     */
+   * This method resets currently recorded data.
+   * @method
+   * @memberof MediaStreamRecorder
+   * @example
+   * recorder.clearRecordedData();
+   */
   this.clearRecordedData = function () {
     if (!mediaRecorder) {
       return
@@ -1617,10 +1617,10 @@ function StereoAudioRecorderHelper (mediaStream, root) {
   audioInput.connect(volume)
 
   /* From the spec: This value controls how frequently the audioprocess event is
-    dispatched and how many sample-frames need to be processed each call.
-    Lower values for buffer size will result in a lower (better) latency.
-    Higher values will be necessary to avoid audio breakup and glitches
-    Legal values are 256, 512, 1024, 2048, 4096, 8192, and 16384. */
+  dispatched and how many sample-frames need to be processed each call.
+  Lower values for buffer size will result in a lower (better) latency.
+  Higher values will be necessary to avoid audio breakup and glitches
+  Legal values are 256, 512, 1024, 2048, 4096, 8192, and 16384. */
   var bufferSize = root.bufferSize || 2048
   if (root.bufferSize === 0) {
     bufferSize = 0
@@ -1924,8 +1924,8 @@ function WhammyRecorderHelper (mediaStream, root) {
     }
     var maxColorDifference = Math.sqrt(
       Math.pow(255, 2) +
-            Math.pow(255, 2) +
-            Math.pow(255, 2)
+      Math.pow(255, 2) +
+      Math.pow(255, 2)
     )
     var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0
     var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0
@@ -1948,8 +1948,8 @@ function WhammyRecorderHelper (mediaStream, root) {
       }
       var colorDifference = Math.sqrt(
         Math.pow(currentColor.r - sampleColor.r, 2) +
-                Math.pow(currentColor.g - sampleColor.g, 2) +
-                Math.pow(currentColor.b - sampleColor.b, 2)
+        Math.pow(currentColor.g - sampleColor.g, 2) +
+        Math.pow(currentColor.b - sampleColor.b, 2)
       )
       // difference in color it is difference in color vectors (r1,g1,b1) <=> (r2,g2,b2)
       if (colorDifference <= maxColorDifference * pixTolerance) {
@@ -1981,8 +1981,8 @@ function WhammyRecorderHelper (mediaStream, root) {
     }
     var maxColorDifference = Math.sqrt(
       Math.pow(255, 2) +
-            Math.pow(255, 2) +
-            Math.pow(255, 2)
+      Math.pow(255, 2) +
+      Math.pow(255, 2)
     )
     var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0
     var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0
@@ -2008,8 +2008,8 @@ function WhammyRecorderHelper (mediaStream, root) {
           }
           var colorDifference = Math.sqrt(
             Math.pow(currentColor.r - sampleColor.r, 2) +
-                        Math.pow(currentColor.g - sampleColor.g, 2) +
-                        Math.pow(currentColor.b - sampleColor.b, 2)
+            Math.pow(currentColor.g - sampleColor.g, 2) +
+            Math.pow(currentColor.b - sampleColor.b, 2)
           )
           // difference in color it is difference in color vectors (r1,g1,b1) <=> (r2,g2,b2)
           if (colorDifference <= maxColorDifference * pixTolerance) {
@@ -2232,15 +2232,15 @@ var Whammy = (function () {
   }
 
   /**
-     * Pass Canvas or Context or image/webp(string) to {@link Whammy} encoder.
-     * @method
-     * @memberof Whammy
-     * @example
-     * recorder = new Whammy().Video(0.8, 100);
-     * recorder.add(canvas || context || 'image/webp');
-     * @param {string} frame - Canvas || Context || image/webp
-     * @param {number} duration - Stick a duration (in milliseconds)
-     */
+   * Pass Canvas or Context or image/webp(string) to {@link Whammy} encoder.
+   * @method
+   * @memberof Whammy
+   * @example
+   * recorder = new Whammy().Video(0.8, 100);
+   * recorder.add(canvas || context || 'image/webp');
+   * @param {string} frame - Canvas || Context || image/webp
+   * @param {number} duration - Stick a duration (in milliseconds)
+   */
   WhammyVideo.prototype.add = function (frame, duration) {
     if ('canvas' in frame) { // CanvasRenderingContext2D
       frame = frame.canvas
@@ -2417,9 +2417,7 @@ var Whammy = (function () {
       }
 
       var width = frames[0].width
-
       var height = frames[0].height
-
       var duration = frames[0].duration
 
       for (var i = 1; i < frames.length; i++) {
@@ -2597,16 +2595,16 @@ var Whammy = (function () {
   }
 
   /**
-     * Encodes frames in WebM container. It uses WebWorkinvoke to invoke 'ArrayToWebM' method.
-     * @param {function} callback - Callback function, that is used to pass recorded blob back to the callee.
-     * @method
-     * @memberof Whammy
-     * @example
-     * recorder = new Whammy().Video(0.8, 100);
-     * recorder.compile(function(blob) {
-     *    // blob.size - blob.type
-     * });
-     */
+   * Encodes frames in WebM container. It uses WebWorkinvoke to invoke 'ArrayToWebM' method.
+   * @param {function} callback - Callback function, that is used to pass recorded blob back to the callee.
+   * @method
+   * @memberof Whammy
+   * @example
+   * recorder = new Whammy().Video(0.8, 100);
+   * recorder.compile(function(blob) {
+   *    // blob.size - blob.type
+   * });
+   */
   WhammyVideo.prototype.compile = function (callback) {
     var webWorker = processInWebWorker(whammyInWebWorker)
 
@@ -2623,14 +2621,14 @@ var Whammy = (function () {
 
   return {
     /**
-         * A more abstract-ish API.
-         * @method
-         * @memberof Whammy
-         * @example
-         * recorder = new Whammy().Video(0.8, 100);
-         * @param {?number} speed - 0.8
-         * @param {?number} quality - 100
-         */
+     * A more abstract-ish API.
+     * @method
+     * @memberof Whammy
+     * @example
+     * recorder = new Whammy().Video(0.8, 100);
+     * @param {?number} speed - 0.8
+     * @param {?number} quality - 100
+     */
     Video: WhammyVideo
   }
 })()

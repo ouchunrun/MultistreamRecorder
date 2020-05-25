@@ -20,6 +20,17 @@
 
 > npm install
 
+## Issue
+
+- 目前最多只能加4路流
+
+- blob 格式的 video 怎么下载？
+
+## 参考
+
+- [MultiStreamRecorder.js & MediaStreamRecorder](http://localhost:63342/MediaStreamRecorder/demos/MultiStreamRecorder.html?_ijt=5i6u5ds8a3on7jl8b5jft59og8)
+
 ## FAQ
 
 -  standard 无法检查到调用的外部函数或变量
+
