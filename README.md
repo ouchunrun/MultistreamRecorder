@@ -11,6 +11,14 @@
 - git 添加 pre-commit
 > "pre-commit": "standard --verbose | snazzy"
 
+```
+  "husky": {
+    "hooks": {
+      "pre-commit": "standard --verbose | snazzy"
+    }
+  }
+```
+
 - 格式化输出
 > standard --verbose | snazzy
 

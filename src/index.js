@@ -2,9 +2,18 @@ var container = document.getElementById('mCSB_2')
 var index = 1
 var timeInterval = document.querySelector('#time-interval') ? parseInt(document.querySelector('#time-interval').value) : (60 * 1000)
 var multiStreamRecorder
+var streamList = []
 var mediaConstraints = {
   audio: true,
   video: true
+}
+
+const options = {
+  mimeType: 'video/webm',
+  video: {
+    width: 1920,
+    height: 1080
+  }
 }
 
 /**
@@ -40,6 +49,7 @@ function _stopRecording () {
  * @param stream
  */
 function onMediaSuccess (stream) {
+  streamList.push(stream)
   var video = document.createElement('video')
 
   video = mergeProps(video, {
@@ -51,7 +61,7 @@ function onMediaSuccess (stream) {
   video.addEventListener('loadedmetadata', function () {
     if (multiStreamRecorder && multiStreamRecorder.stream) return
 
-    multiStreamRecorder = new MultiStreamRecorder([stream, stream])
+    multiStreamRecorder = new MultiStreamRecorder([stream], options)
     multiStreamRecorder.stream = stream
 
     multiStreamRecorder.previewStream = function (stream) {
@@ -79,11 +89,86 @@ function _addStream () {
   if (!multiStreamRecorder || !multiStreamRecorder.stream) {
     return
   }
-  multiStreamRecorder.addStream(multiStreamRecorder.stream)
+  navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: {
+      width: 1920,
+      height: 1080
+    }
+  }).then(function (stream) {
+    streamList.push(stream)
+    multiStreamRecorder.addStream(stream)
+  }).catch(function (error) {
+    console.error(error)
+  })
 }
 
 function onMediaError (e) {
   console.error('media error', e)
+}
+
+/**
+ * 获取stream列表
+ * @returns {Promise<Array>}
+ */
+async function _getStreamList () {
+  var localAudioStream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: false
+  })
+
+  var remoteAudioStream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: false
+  })
+
+  var videoStream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: { width: 1920, height: 1080 }
+  })
+
+  var presentStream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: { width: 1920, height: 1080 }
+  })
+
+  if (localAudioStream) {
+    console.warn('add localAudioStream')
+    streamList.push(localAudioStream)
+  }
+  if (remoteAudioStream) {
+    console.warn('add remoteAudioStream')
+    streamList.push(remoteAudioStream)
+  }
+  if (videoStream) {
+    console.warn('add videoStream')
+    streamList.push(videoStream)
+    showVideo(videoStream)
+  }
+  if (presentStream) {
+    console.warn('add presentStream')
+    streamList.push(presentStream)
+    showVideo(presentStream)
+  }
+
+  console.warn('get streamList: ', streamList)
+  return streamList
+}
+
+function showVideo (stream) {
+  const span = document.createElement('span')
+  let video = document.createElement('video')
+  video.style.width = '200px'
+  video.srcObject = stream
+  video.addEventListener('loadedmetadata', function () {
+    const res = 'video resolution: ' + video.videoWidth + '*' + video.videoHeight
+    console.log(res)
+    span.innerText = res
+  })
+  video.play()
+  container.appendChild(video)
+  container.appendChild(span)
+  container.appendChild(document.createElement('hr'))
 }
 
 /**
