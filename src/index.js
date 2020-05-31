@@ -79,6 +79,7 @@ function onMediaSuccess (stream) {
     }
 
     multiStreamRecorder.ondataavailable = function (blob) {
+      console.warn('ondataavailable: ', blob)
       appendLink(blob)
     }
     // get blob after specific time interval
@@ -186,7 +187,6 @@ function showVideo (stream) {
  * @param blob
  */
 function appendLink (blob) {
-  console.warn(blob)
   var url = URL.createObjectURL(blob)
   var a = document.createElement('a')
   a.target = '_blank'
@@ -208,18 +208,16 @@ function appendLink (blob) {
  * @param fileName
  */
 function createDownloadLink (blob, fileName) {
-  var li = document.createElement('li')
-  var link = document.createElement('a')
-  let dataBlob = new window.Blob([blob], { type: 'video/mp4' })
+  let file = new window.File([blob], fileName, { type: 'video/mp4', lastModified: Date.now() })
+  // let dataBlob = new window.Blob([blob], { type: 'video/mp4' })
+  let element = document.createElement('a')
+  element.setAttribute('href', 'data:video/mp4,' + URL.createObjectURL(file))
+  element.setAttribute('download', fileName)
 
-  // link the a element to the blob
-  link.href = URL.createObjectURL(dataBlob)
-  link.download = Date.parse(new Date()) + fileName
-  link.innerHTML = link.download
-  li.appendChild(link)
+  element.style.display = 'none'
+  document.body.appendChild(element)
 
-  // add the li element to the ordered list
-  container.appendChild(li)
+  element.click()
 }
 
 /**
