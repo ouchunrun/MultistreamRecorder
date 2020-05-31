@@ -9,10 +9,10 @@ var mediaConstraints = {
 }
 
 const options = {
-  mimeType: 'video/webm',
+  mimeType: 'video/mp4',
   video: {
-    width: 1920,
-    height: 1080
+    width: 1280,
+    height: 720
   }
 }
 
@@ -23,6 +23,7 @@ const options = {
  * @param errorCallback
  */
 function captureUserMedia (mediaConstraints, successCallback, errorCallback) {
+  console.warn('getUserMedia constraints', JSON.stringify(mediaConstraints, null, '  '))
   navigator.mediaDevices.getUserMedia(mediaConstraints).then(successCallback).catch(errorCallback)
 }
 
@@ -33,6 +34,14 @@ function captureUserMedia (mediaConstraints, successCallback, errorCallback) {
 function _startRecording () {
   this.disabled = true
   captureUserMedia(mediaConstraints, onMediaSuccess, onMediaError)
+}
+
+/**
+ * 取流报错
+ * @param e
+ */
+function onMediaError (e) {
+  console.error('media error', e)
 }
 
 /**
@@ -86,25 +95,26 @@ function onMediaSuccess (stream) {
  * @private
  */
 function _addStream () {
+  console.log('add stream')
   if (!multiStreamRecorder || !multiStreamRecorder.stream) {
     return
   }
-  navigator.mediaDevices.getUserMedia({
+  var screenConstraints = {
     audio: true,
     video: {
-      width: 1920,
-      height: 1080
+      width: { max: '1920' },
+      height: { max: '1080' },
+      frameRate: { max: '5' }
     }
-  }).then(function (stream) {
+  }
+
+  navigator.mediaDevices.getDisplayMedia(screenConstraints).then(function (stream) {
+    console.warn('getDisplayMedia stream success: ' + stream.id)
     streamList.push(stream)
     multiStreamRecorder.addStream(stream)
   }).catch(function (error) {
     console.error(error)
   })
-}
-
-function onMediaError (e) {
-  console.error('media error', e)
 }
 
 /**
@@ -176,6 +186,7 @@ function showVideo (stream) {
  * @param blob
  */
 function appendLink (blob) {
+  console.warn(blob)
   var url = URL.createObjectURL(blob)
   var a = document.createElement('a')
   a.target = '_blank'
@@ -199,7 +210,7 @@ function appendLink (blob) {
 function createDownloadLink (blob, fileName) {
   var li = document.createElement('li')
   var link = document.createElement('a')
-  let dataBlob = new window.Blob([blob], { type: 'video/webm' })
+  let dataBlob = new window.Blob([blob], { type: 'video/mp4' })
 
   // link the a element to the blob
   link.href = URL.createObjectURL(dataBlob)

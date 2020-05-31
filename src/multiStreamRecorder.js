@@ -129,8 +129,8 @@ function MediaStreamRecorder (mediaStream) {
   // StereoAudioRecorder || WhammyRecorder || MediaRecorderWrapper || GifRecorder
   this.recorderType = null
 
-  // video/webm or audio/webm or audio/ogg or audio/wav
-  this.mimeType = 'video/webm'
+  // video/mp4 or audio/webm or audio/ogg or audio/wav
+  this.mimeType = 'video/mp4'
 
   // logs are enabled by default
   this.disableLogs = false
@@ -155,10 +155,10 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   var mediaRecorder
 
   options = options || {
-    mimeType: 'video/webm',
+    mimeType: 'video/mp4',
     video: {
-      width: 360,
-      height: 240
+      width: 640,
+      height: 360
     }
   }
 
@@ -171,11 +171,11 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   }
 
   if (!options.video.width) {
-    options.video.width = 360
+    options.video.width = 640
   }
 
   if (!options.video.height) {
-    options.video.height = 240
+    options.video.height = 360
   }
 
   this.start = function (timeSlice) {
@@ -184,8 +184,8 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
 
     if (getVideoTracks().length) {
       mixer.frameInterval = options.frameInterval || 10
-      mixer.width = options.video.width || 360
-      mixer.height = options.video.height || 240
+      mixer.width = options.video.width || 640
+      mixer.height = options.video.height || 360
       mixer.startDrawingFrames()
     }
 
@@ -332,8 +332,8 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
   this.disableLogs = false
   this.frameInterval = 10
 
-  this.width = 360
-  this.height = 240
+  this.width = 640
+  this.height = 360
 
   // use gain node to prevent echo
   this.useGainNode = true
@@ -344,28 +344,13 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
   // Cross-Browser-Declarations.js
 
   // WebAudio API representer
-  var AudioContext = window.AudioContext
-
-  if (typeof AudioContext === 'undefined') {
-    if (typeof webkitAudioContext !== 'undefined') {
-      /* global AudioContext:true */
-      AudioContext = webkitAudioContext
-    }
-
-    if (typeof mozAudioContext !== 'undefined') {
-      /* global AudioContext:true */
-      AudioContext = mozAudioContext
-    }
+  var AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext
+  if (!AudioContext) {
+    console.error('AudioContext is not supported!')
+    return
   }
-
   /* jshint -W079 */
-  var URL = window.URL
-
-  if (typeof URL === 'undefined' && typeof webkitURL !== 'undefined') {
-    /* global URL:true */
-    URL = webkitURL
-  }
-
+  var URL = window.URL || window.webkitURL
   if (typeof navigator !== 'undefined' && typeof navigator.getUserMedia === 'undefined') { // maybe window.navigator?
     if (typeof navigator.webkitGetUserMedia !== 'undefined') {
       navigator.getUserMedia = navigator.webkitGetUserMedia
@@ -376,12 +361,7 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
     }
   }
 
-  var MediaStream = window.MediaStream
-
-  if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
-    MediaStream = webkitMediaStream
-  }
-
+  var MediaStream = window.MediaStream || window.webkitMediaStream
   /* global MediaStream:true */
   if (typeof MediaStream !== 'undefined') {
     if (!('getVideoTracks' in MediaStream.prototype)) {
@@ -425,12 +405,7 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
   }
 
   var Storage = {}
-
-  if (typeof AudioContext !== 'undefined') {
-    Storage.AudioContext = AudioContext
-  } else if (typeof webkitAudioContext !== 'undefined') {
-    Storage.AudioContext = webkitAudioContext
-  }
+  Storage.AudioContext = AudioContext || window.webkitAudioContext
 
   this.startDrawingFrames = function () {
     drawVideosToCanvas()
@@ -560,13 +535,11 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
     }
 
     var videoStream = new MediaStream()
-
     capturedStream.getVideoTracks().forEach(function (track) {
       videoStream.addTrack(track)
     })
 
     canvas.stream = videoStream
-
     return videoStream
   }
 
@@ -593,13 +566,10 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
       }
 
       audioTracksLength++
-
       var audioSource = self.audioContext.createMediaStreamSource(stream)
-
       if (self.useGainNode === true) {
         audioSource.connect(self.gainNode)
       }
-
       self.audioSources.push(audioSource)
     })
 
@@ -774,47 +744,9 @@ var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko
 })(typeof global !== 'undefined' ? global : window)
 
 // WebAudio API representer
-var AudioContext = window.AudioContext
-
-if (typeof AudioContext === 'undefined') {
-  if (typeof webkitAudioContext !== 'undefined') {
-    /* global AudioContext:true */
-    AudioContext = webkitAudioContext
-  }
-
-  if (typeof mozAudioContext !== 'undefined') {
-    /* global AudioContext:true */
-    AudioContext = mozAudioContext
-  }
-}
-
-if (typeof window === 'undefined') {
-  /* jshint -W020 */
-  window = {}
-}
-
-// WebAudio API representer
-var AudioContext = window.AudioContext
-
-if (typeof AudioContext === 'undefined') {
-  if (typeof webkitAudioContext !== 'undefined') {
-    /* global AudioContext:true */
-    AudioContext = webkitAudioContext
-  }
-
-  if (typeof mozAudioContext !== 'undefined') {
-    /* global AudioContext:true */
-    AudioContext = mozAudioContext
-  }
-}
-
+var AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext
 /* jshint -W079 */
-var URL = window.URL
-
-if (typeof URL === 'undefined' && typeof webkitURL !== 'undefined') {
-  /* global URL:true */
-  URL = webkitURL
-}
+var URL = window.URL || window.webkitURL
 
 if (typeof navigator !== 'undefined') {
   if (typeof navigator.webkitGetUserMedia !== 'undefined') {
@@ -933,11 +865,11 @@ function invokeSaveAsDialog (file, fileName) {
 
   if (!file.type) {
     try {
-      file.type = 'video/webm'
+      file.type = 'video/mp4'
     } catch (e) {}
   }
 
-  var fileExtension = (file.type || 'video/webm').split('/')[1]
+  var fileExtension = (file.type || 'video/mp4').split('/')[1]
 
   if (fileName && fileName.indexOf('.') !== -1) {
     var splitted = fileName.split('.')
@@ -1065,7 +997,7 @@ function MediaRecorderWrapper (mediaStream) {
     this.timeSlice = timeSlice || 5000
 
     if (!self.mimeType) {
-      self.mimeType = 'video/webm'
+      self.mimeType = 'video/mp4'
     }
 
     if (self.mimeType.indexOf('audio') !== -1) {
@@ -1136,16 +1068,17 @@ function MediaRecorderWrapper (mediaStream) {
 
     // Dispatching OnDataAvailable Handler
     mediaRecorder.ondataavailable = function (e) {
+      if (!mediaRecorder) {
+        return
+      }
       // how to fix FF-corrupt-webm issues?
       // should we leave this?          e.data.size < 26800
       if (!e.data || !e.data.size || e.data.size < 26800 || firedOnDataAvailableOnce) {
         return
       }
-
       firedOnDataAvailableOnce = true
-
-      var blob = self.getNativeBlob ? e.data : new Blob([e.data], {
-        type: self.mimeType || 'video/webm'
+      var blob = self.getNativeBlob ? e.data : new window.Blob([e.data], {
+        type: self.mimeType || 'video/mp4'
       })
 
       self.ondataavailable(blob)
@@ -2484,7 +2417,7 @@ var Whammy = (function () {
       }
 
       return new Blob(ebml, {
-        type: 'video/webm'
+        type: 'video/mp4'
       })
     }
 
