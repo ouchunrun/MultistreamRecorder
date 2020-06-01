@@ -28,7 +28,7 @@ function _stopRecording () {
 function _startRecording () {
   this.disabled = true
   let mediaConstraints = {
-    audio: false,
+    audio: true,
     video: true
   }
   console.log('getUserMedia constraints: \n', JSON.stringify(mediaConstraints, null, '  '))
