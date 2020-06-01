@@ -591,6 +591,10 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
 
       if (stream.getAudioTracks().length && self.audioContext) {
         var audioSource = self.audioContext.createMediaStreamSource(stream)
+        if (!self.audioDestination) {
+          console.warn('audioDestination is not exist!')
+          self.audioDestination = self.audioContext.createMediaStreamDestination()
+        }
         audioSource.connect(self.audioDestination)
         self.audioSources.push(audioSource)
       }

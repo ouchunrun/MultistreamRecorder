@@ -1,14 +1,14 @@
-var container = document.getElementById('mCSB_2')
-var index = 1
-var timeInterval = document.querySelector('#time-interval') ? parseInt(document.querySelector('#time-interval').value) : (60 * 1000)
-var multiStreamRecorder
-var streamList = []
-
-const options = {
+let container = document.getElementById('mCSB_2')
+let index = 1
+let timeInterval = document.querySelector('#time-interval') ? parseInt(document.querySelector('#time-interval').value) : (60 * 1000)
+let multiStreamRecorder
+let streamList = []
+const recorderOptions = {
   mimeType: 'video/webm;codecs=vp8',
   video: {
     width: 1280,
-    height: 720
+    height: 720,
+    frameRate: 15
   }
 }
 
@@ -16,23 +16,42 @@ const options = {
  * 停止录制
  * @private
  */
-function _stopRecording () {
+function stopRecording () {
   multiStreamRecorder.stop()
   multiStreamRecorder.stream.stop()
+  // stop all stream
+  streamList.forEach(function (stream) {
+    stream.getTracks().forEach(function (track) {
+      track.stop()
+    })
+  })
 }
 
 /**
  * 开始取流和录制
  * @private
  */
-function _startRecording () {
+function startRecording () {
   this.disabled = true
-  let mediaConstraints = {
+  let constraints = {
     audio: true,
-    video: true
+    video: false
   }
-  console.log('getUserMedia constraints: \n', JSON.stringify(mediaConstraints, null, '  '))
-  navigator.mediaDevices.getUserMedia(mediaConstraints).then(onMediaSuccess).catch(onMediaError)
+  console.log('getUserMedia audio constraints: \n', JSON.stringify(constraints, null, '  '))
+  navigator.mediaDevices.getUserMedia(constraints).then(function (audioStream) {
+    console.log('get audioStream success: ', audioStream.id)
+    streamList.push(audioStream)
+    let mediaConstraints = {
+      audio: false,
+      video: {
+        width: { max: 320 },
+        height: { max: 270 }
+      }
+    }
+    console.log('getUserMedia video constraints: \n', JSON.stringify(mediaConstraints, null, '  '))
+    navigator.mediaDevices.getUserMedia(mediaConstraints).then(onMediaSuccess).catch(onMediaError)
+  }).catch(function () {
+  })
 }
 
 /**
@@ -47,10 +66,10 @@ function onMediaError (e) {
  * 取流成功
  * @param stream
  */
-function onMediaSuccess (stream) {
+async function onMediaSuccess (stream) {
   streamList.push(stream)
-  var video = document.createElement('video')
-
+  let video = document.createElement('video')
+  video.autoplay = true
   video = mergeProps(video, {
     controls: true,
     muted: true
@@ -58,9 +77,11 @@ function onMediaSuccess (stream) {
   video.srcObject = stream
 
   video.addEventListener('loadedmetadata', function () {
+    console.warn('video loadedmetadata resolution: ' + video.videoWidth + '*' + video.videoHeight)
     if (multiStreamRecorder && multiStreamRecorder.stream) return
 
-    multiStreamRecorder = new MultiStreamRecorder([stream], options)
+    console.warn('create MultiStreamRecorder...')
+    multiStreamRecorder = new MultiStreamRecorder(streamList, recorderOptions)
     multiStreamRecorder.stream = stream
 
     multiStreamRecorder.previewStream = function (stream) {
@@ -82,19 +103,34 @@ function onMediaSuccess (stream) {
 }
 
 /**
- * 添加流
+ * 添加音频流
+ */
+function addAudioStream () {
+  let constraints = {
+    audio: true,
+    video: false
+  }
+  navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+    console.log('get audio stream success: ' + stream.id)
+    streamList.push(stream)
+    multiStreamRecorder.addStream(stream)
+  }).catch(onMediaError)
+}
+
+/**
+ * 添加桌面共享流
  * @private
  */
-function _addStream () {
+function addScreenStream () {
   console.log('add stream')
   if (!multiStreamRecorder || !multiStreamRecorder.stream) {
     return
   }
-  var screenConstraints = {
+  let screenConstraints = {
     audio: true,
     video: {
-      width: { max: '1920' },
-      height: { max: '1080' },
+      width: { max: '640' },
+      height: { max: '360' },
       frameRate: { max: '5' }
     }
   }
@@ -102,6 +138,25 @@ function _addStream () {
   console.log('getDisplayMedia constraints: \n', JSON.stringify(screenConstraints, null, '  '))
   navigator.mediaDevices.getDisplayMedia(screenConstraints).then(function (stream) {
     console.log('getDisplayMedia stream success: ' + stream.id)
+
+    stream.oninactive = function () {
+      console.warn('stream: user close share control bar')
+      console.log('stop recorder present stream')
+    }
+
+    // Todo: Fixed stream.oninactive is not aways trigger when system audio sharing
+    stream.getVideoTracks().forEach(function (track) {
+      track.onended = function () {
+        console.warn('stream video track stop')
+        stream.getTracks().forEach(function (mediaTrack) {
+          if (mediaTrack.readyState !== 'ended') {
+            console.warn('stop track')
+            mediaTrack.stop()
+          }
+        })
+      }
+    })
+
     streamList.push(stream)
     multiStreamRecorder.addStream(stream)
   }).catch(function (error) {
@@ -113,23 +168,23 @@ function _addStream () {
  * 获取stream列表
  * @returns {Promise<Array>}
  */
-async function _getStreamList () {
-  var localAudioStream = await navigator.mediaDevices.getUserMedia({
+async function getStreamList () {
+  let localAudioStream = await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: false
   })
 
-  var remoteAudioStream = await navigator.mediaDevices.getUserMedia({
+  let remoteAudioStream = await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: false
   })
 
-  var videoStream = await navigator.mediaDevices.getUserMedia({
+  let videoStream = await navigator.mediaDevices.getUserMedia({
     audio: false,
-    video: { width: 1920, height: 1080 }
+    video: { width: 640, height: 360 }
   })
 
-  var presentStream = await navigator.mediaDevices.getUserMedia({
+  let presentStream = await navigator.mediaDevices.getUserMedia({
     audio: false,
     video: { width: 1920, height: 1080 }
   })
@@ -178,8 +233,8 @@ function showVideo (stream) {
  * @param blob
  */
 function appendLink (blob) {
-  var url = URL.createObjectURL(blob)
-  var a = document.createElement('a')
+  let url = URL.createObjectURL(blob)
+  let a = document.createElement('a')
   a.target = '_blank'
   a.innerHTML = 'Open Recorded ' + (blob.type === 'audio/ogg' ? 'Audio' : 'Video') + ' No. ' + (index++) + ' (Size: ' + bytesToSize(blob.size) + ') Time Length: ' + getTimeLength(timeInterval)
   a.href = url
@@ -196,9 +251,11 @@ function appendLink (blob) {
 function download (blob) {
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement('a')
+  let fileName = Date.now() + '.mp4'
   a.href = url
-  a.innerHTML = '点击下载'
-  a.download = Date.now() + '.webm'
+  a.innerHTML = '点击下载 ' + fileName
+  a.download = fileName
+  a.click()
   container.appendChild(a)
   container.appendChild(document.createElement('hr'))
 }
@@ -209,10 +266,10 @@ function download (blob) {
  * @returns {string}
  */
 function bytesToSize (bytes) {
-  var k = 1000
-  var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  let k = 1000
+  let sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
   if (bytes === 0) return '0 Bytes'
-  var i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10)
+  let i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10)
   return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i]
 }
 
@@ -222,6 +279,6 @@ function bytesToSize (bytes) {
  * @returns {string}
  */
 function getTimeLength (milliseconds) {
-  var data = new Date(milliseconds)
+  let data = new Date(milliseconds)
   return data.getUTCHours() + ' hours, ' + data.getUTCMinutes() + ' minutes and ' + data.getUTCSeconds() + ' second(s)'
 }
