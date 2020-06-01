@@ -28,15 +28,34 @@
 
 > npm install
 
-## Issue
+## 
 
-- 目前最多只能加4路流
+```javascript
+/**
+* 下载blob
+* @param allChunks blob数据（ondataavailable返回的数据）
+*/
+function download (allChunks) {
+  const blob = new window.Blob(allChunks, { type: 'video/webm' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.style.display = 'none'
+  a.href = url
+  a.download = Date.now() + '.webm'
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => {
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }, 100)
+}
 
-- blob 格式的 video 怎么下载？
+```
+
 
 ## 参考
 
-- [MultiStreamRecorder.js & MediaStreamRecorder](http://localhost:63342/MediaStreamRecorder/demos/MultiStreamRecorder.html?_ijt=5i6u5ds8a3on7jl8b5jft59og8)
+- [MultiStreamRecorder.js & MediaStreamRecorder](https://github.com/streamproc/MediaStreamRecorder)
 
 ## FAQ
 

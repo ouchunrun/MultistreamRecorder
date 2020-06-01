@@ -1,17 +1,5 @@
 'use strict'
 
-// Last time updated: 2017-08-31 4:03:22 AM UTC
-
-// __________________________
-// MediaStreamRecorder v1.3.4
-
-// Open-Sourced: https://github.com/streamproc/MediaStreamRecorder
-
-// --------------------------------------------------
-// Muaz Khan     - www.MuazKhan.com
-// MIT License   - www.WebRTC-Experiment.com/licence
-// --------------------------------------------------
-
 // ______________________
 // MediaStreamRecorder.js
 
@@ -129,8 +117,8 @@ function MediaStreamRecorder (mediaStream) {
   // StereoAudioRecorder || WhammyRecorder || MediaRecorderWrapper || GifRecorder
   this.recorderType = null
 
-  // video/mp4 or audio/webm or audio/ogg or audio/wav
-  this.mimeType = 'video/mp4'
+  // video/webm;codecs=vp8 or audio/webm or audio/ogg or audio/wav
+  this.mimeType = 'video/webm;codecs=vp8'
 
   // logs are enabled by default
   this.disableLogs = false
@@ -155,7 +143,7 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   var mediaRecorder
 
   options = options || {
-    mimeType: 'video/mp4',
+    mimeType: 'video/webm;codecs=vp8',
     video: {
       width: 640,
       height: 360
@@ -306,18 +294,6 @@ if (typeof MediaStreamRecorder !== 'undefined') {
   MediaStreamRecorder.MultiStreamRecorder = MultiStreamRecorder
 }
 
-// Last time updated: 2017-08-31 2:56:12 AM UTC
-
-// ________________________
-// MultiStreamsMixer v1.0.2
-
-// Open-Sourced: https://github.com/muaz-khan/MultiStreamsMixer
-
-// --------------------------------------------------
-// Muaz Khan     - www.MuazKhan.com
-// MIT License   - www.WebRTC-Experiment.com/licence
-// --------------------------------------------------
-
 function MultiStreamsMixer (arrayOfMediaStreams) {
   // requires: chrome://flags/#enable-experimental-web-platform-features
 
@@ -351,16 +327,7 @@ function MultiStreamsMixer (arrayOfMediaStreams) {
   }
   /* jshint -W079 */
   var URL = window.URL || window.webkitURL
-  if (typeof navigator !== 'undefined' && typeof navigator.getUserMedia === 'undefined') { // maybe window.navigator?
-    if (typeof navigator.webkitGetUserMedia !== 'undefined') {
-      navigator.getUserMedia = navigator.webkitGetUserMedia
-    }
-
-    if (typeof navigator.mozGetUserMedia !== 'undefined') {
-      navigator.getUserMedia = navigator.mozGetUserMedia
-    }
-  }
-
+  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.webkitGetUserMedia
   var MediaStream = window.MediaStream || window.webkitMediaStream
   /* global MediaStream:true */
   if (typeof MediaStream !== 'undefined') {
@@ -749,13 +716,7 @@ var AudioContext = window.AudioContext || window.webkitAudioContext || window.mo
 var URL = window.URL || window.webkitURL
 
 if (typeof navigator !== 'undefined') {
-  if (typeof navigator.webkitGetUserMedia !== 'undefined') {
-    navigator.getUserMedia = navigator.webkitGetUserMedia
-  }
-
-  if (typeof navigator.mozGetUserMedia !== 'undefined') {
-    navigator.getUserMedia = navigator.mozGetUserMedia
-  }
+  navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.getUserMedia
 } else {
   navigator = {
     getUserMedia: function () {},
@@ -764,15 +725,12 @@ if (typeof navigator !== 'undefined') {
 }
 
 var IsEdge = navigator.userAgent.indexOf('Edge') !== -1 && (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob)
-
 var IsOpera = false
 if (typeof opera !== 'undefined' && navigator.userAgent && navigator.userAgent.indexOf('OPR/') !== -1) {
   IsOpera = true
 }
 var IsChrome = !IsEdge && !IsEdge && !!navigator.webkitGetUserMedia
-
 var MediaStream = window.MediaStream
-
 if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
   MediaStream = webkitMediaStream
 }
@@ -865,11 +823,11 @@ function invokeSaveAsDialog (file, fileName) {
 
   if (!file.type) {
     try {
-      file.type = 'video/mp4'
+      file.type = 'video/webm;codecs=vp8'
     } catch (e) {}
   }
 
-  var fileExtension = (file.type || 'video/mp4').split('/')[1]
+  var fileExtension = (file.type || 'video/webm;codecs=vp8').split('/')[1]
 
   if (fileName && fileName.indexOf('.') !== -1) {
     var splitted = fileName.split('.')
@@ -997,7 +955,7 @@ function MediaRecorderWrapper (mediaStream) {
     this.timeSlice = timeSlice || 5000
 
     if (!self.mimeType) {
-      self.mimeType = 'video/mp4'
+      self.mimeType = 'video/webm;codecs=vp8'
     }
 
     if (self.mimeType.indexOf('audio') !== -1) {
@@ -1063,7 +1021,6 @@ function MediaRecorderWrapper (mediaStream) {
     if (self.ignoreMutedMedia === true) {
       mediaRecorder.ignoreMutedMedia = true
     }
-
     var firedOnDataAvailableOnce = false
 
     // Dispatching OnDataAvailable Handler
@@ -1073,13 +1030,12 @@ function MediaRecorderWrapper (mediaStream) {
       }
       // how to fix FF-corrupt-webm issues?
       // should we leave this?          e.data.size < 26800
-      console.warn('mediaRecorder ondataavailable: ', e.data)
       if (!e.data || !e.data.size || e.data.size < 26800 || firedOnDataAvailableOnce) {
         return
       }
       firedOnDataAvailableOnce = true
       var blob = self.getNativeBlob ? e.data : new window.Blob([e.data], {
-        type: self.mimeType || 'video/mp4'
+        type: self.mimeType || 'video/webm;codecs=vp8'
       })
 
       self.ondataavailable(blob)
@@ -1133,7 +1089,7 @@ function MediaRecorderWrapper (mediaStream) {
     // onDataAvailable, instead, it passive wait the client side pull encoded data
     // by calling requestData API.
     try {
-      mediaRecorder.start(3.6e+6)
+      mediaRecorder.start()
     } catch (e) {
       mediaRecorder = null
     }
@@ -2418,7 +2374,7 @@ var Whammy = (function () {
       }
 
       return new Blob(ebml, {
-        type: 'video/mp4'
+        type: 'video/webm;codecs=vp8'
       })
     }
 

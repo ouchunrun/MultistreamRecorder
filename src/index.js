@@ -3,13 +3,9 @@ var index = 1
 var timeInterval = document.querySelector('#time-interval') ? parseInt(document.querySelector('#time-interval').value) : (60 * 1000)
 var multiStreamRecorder
 var streamList = []
-var mediaConstraints = {
-  audio: true,
-  video: true
-}
 
 const options = {
-  mimeType: 'video/mp4',
+  mimeType: 'video/webm;codecs=vp8',
   video: {
     width: 1280,
     height: 720
@@ -17,40 +13,34 @@ const options = {
 }
 
 /**
- * 取流
- * @param mediaConstraints
- * @param successCallback
- * @param errorCallback
- */
-function captureUserMedia (mediaConstraints, successCallback, errorCallback) {
-  console.warn('getUserMedia constraints', JSON.stringify(mediaConstraints, null, '  '))
-  navigator.mediaDevices.getUserMedia(mediaConstraints).then(successCallback).catch(errorCallback)
-}
-
-/**
- * 开始
- * @private
- */
-function _startRecording () {
-  this.disabled = true
-  captureUserMedia(mediaConstraints, onMediaSuccess, onMediaError)
-}
-
-/**
- * 取流报错
- * @param e
- */
-function onMediaError (e) {
-  console.error('media error', e)
-}
-
-/**
- * 停止
+ * 停止录制
  * @private
  */
 function _stopRecording () {
   multiStreamRecorder.stop()
   multiStreamRecorder.stream.stop()
+}
+
+/**
+ * 开始取流和录制
+ * @private
+ */
+function _startRecording () {
+  this.disabled = true
+  let mediaConstraints = {
+    audio: false,
+    video: true
+  }
+  console.log('getUserMedia constraints: \n', JSON.stringify(mediaConstraints, null, '  '))
+  navigator.mediaDevices.getUserMedia(mediaConstraints).then(onMediaSuccess).catch(onMediaError)
+}
+
+/**
+ * 取流失败
+ * @param e
+ */
+function onMediaError (e) {
+  console.error('media error', e)
 }
 
 /**
@@ -79,7 +69,7 @@ function onMediaSuccess (stream) {
     }
 
     multiStreamRecorder.ondataavailable = function (blob) {
-      console.warn('ondataavailable: ', blob)
+      console.log('ondataavailable: ', blob)
       appendLink(blob)
     }
     // get blob after specific time interval
@@ -109,8 +99,9 @@ function _addStream () {
     }
   }
 
+  console.log('getDisplayMedia constraints: \n', JSON.stringify(screenConstraints, null, '  '))
   navigator.mediaDevices.getDisplayMedia(screenConstraints).then(function (stream) {
-    console.warn('getDisplayMedia stream success: ' + stream.id)
+    console.log('getDisplayMedia stream success: ' + stream.id)
     streamList.push(stream)
     multiStreamRecorder.addStream(stream)
   }).catch(function (error) {
@@ -168,7 +159,7 @@ async function _getStreamList () {
 
 function showVideo (stream) {
   const span = document.createElement('span')
-  let video = document.createElement('video')
+  const video = document.createElement('video')
   video.style.width = '200px'
   video.srcObject = stream
   video.addEventListener('loadedmetadata', function () {
@@ -195,29 +186,21 @@ function appendLink (blob) {
 
   container.appendChild(a)
   container.appendChild(document.createElement('hr'))
-
-  console.log('blob.type: ', blob.type)
-  let fileName = '_Recorder.' + blob.type.split('/')[1]
-  createDownloadLink(blob, fileName)
-  container.appendChild(document.createElement('hr'))
+  download(blob)
 }
 
 /**
  * 创建下载链接
  * @param blob
- * @param fileName
  */
-function createDownloadLink (blob, fileName) {
-  let file = new window.File([blob], fileName, { type: 'video/mp4', lastModified: Date.now() })
-  // let dataBlob = new window.Blob([blob], { type: 'video/mp4' })
-  let element = document.createElement('a')
-  element.setAttribute('href', 'data:video/mp4,' + URL.createObjectURL(file))
-  element.setAttribute('download', fileName)
-
-  element.style.display = 'none'
-  document.body.appendChild(element)
-
-  element.click()
+function download (blob) {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.innerHTML = '点击下载'
+  a.download = Date.now() + '.webm'
+  container.appendChild(a)
+  container.appendChild(document.createElement('hr'))
 }
 
 /**

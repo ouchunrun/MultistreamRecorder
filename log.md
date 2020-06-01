@@ -1,3 +1,10 @@
+
+## 2020-6-1
+
+- 修改video类型，生成`video/webm;codecs=vp8` 格式，下载后可播放
+
+- 添加MediaRecorder类型检测
+
 ## 2020-5-31
 
 - 生成.mp4格式文件并且可以选择下载路径
@@ -5,19 +12,15 @@
 /**
  * 创建下载链接
  * @param blob
- * @param fileName
  */
-function createDownloadLink (blob, fileName) {
-  let file = new window.File([blob], fileName, { type: 'video/mp4', lastModified: Date.now() })
-  // let dataBlob = new window.Blob([blob], { type: 'video/mp4' })
-  let element = document.createElement('a')
-  element.setAttribute('href', 'data:video/mp4,' + URL.createObjectURL(file))
-  element.setAttribute('download', fileName)
-
-  element.style.display = 'none'
-  document.body.appendChild(element)
-
-  element.click()
+function download (blob) {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.innerHTML = '点击下载'
+  a.download = Date.now() + '.webm'
+  container.appendChild(a)
+  container.appendChild(document.createElement('hr'))
 }
 ```
 - 添加桌面共享流
