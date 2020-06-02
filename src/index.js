@@ -158,7 +158,7 @@ function addScreenStream () {
     })
 
     streamList.push(stream)
-    multiStreamRecorder.addStream(stream)
+    multiStreamRecorder.addStreams(stream)
   }).catch(function (error) {
     console.error(error)
   })
@@ -255,7 +255,8 @@ function download (blob) {
   a.href = url
   a.innerHTML = '点击下载 ' + fileName
   a.download = fileName
-  a.click()
+  // 自动下载
+  // a.click()
   container.appendChild(a)
   container.appendChild(document.createElement('hr'))
 }
