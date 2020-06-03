@@ -6,9 +6,9 @@ let streamList = []
 const recorderOptions = {
   mimeType: 'video/webm;codecs=vp8',
   video: {
-    width: 1280,
-    height: 720,
-    frameRate: 15
+    width: 320,
+    height: 270,
+    frameRate: 5
   }
 }
 

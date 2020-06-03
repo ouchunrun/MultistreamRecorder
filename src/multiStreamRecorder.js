@@ -138,9 +138,11 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   }
 
   let self = this
-
   let mixer
   let mediaRecorder
+  let defaultWidth = 1280
+  let defaultHeight = 720
+  let frameInterval = 10
   options = options || {
     mimeType: 'video/webm;codecs=vp8',
     video: {
@@ -149,27 +151,28 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     }
   }
   if (!options.frameInterval) {
-    options.frameInterval = 10
+    options.frameInterval = frameInterval
   }
   if (!options.video) {
     options.video = {}
   }
   if (!options.video.width) {
-    options.video.width = 1280
+    options.video.width = defaultWidth
   }
   if (!options.video.height) {
-    options.video.height = 720
+    options.video.height = defaultHeight
   }
   console.warn('MultiStreamRecorder options: ', JSON.stringify(options, null, '  '))
 
   this.start = function (timeSlice) {
+    console.log('mediaRecorder start ...')
     // github/muaz-khan/MultiStreamsMixer
-    mixer = new MultiStreamsMixer(arrayOfMediaStreams)
+    mixer = new MultiStreamsMixer(arrayOfMediaStreams, options.video.width, options.video.height)
 
     if (getVideoTracks().length) {
-      mixer.frameInterval = options.frameInterval || 10
-      mixer.width = options.video.width || 1280
-      mixer.height = options.video.height || 720
+      mixer.frameInterval = options.frameInterval || frameInterval
+      mixer.width = options.video.width || defaultWidth
+      mixer.height = options.video.height || defaultHeight
       mixer.startDrawingFrames()
     }
 
@@ -227,6 +230,9 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     }
   }
 
+  /**
+   * 清除录制的数据
+   */
   this.clearRecordedData = function () {
     if (mediaRecorder) {
       mediaRecorder.clearRecordedData()
@@ -234,6 +240,7 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     }
 
     if (mixer) {
+      // 释放流
       mixer.releaseStreams()
       mixer = null
     }
@@ -294,22 +301,27 @@ if (typeof MediaStreamRecorder !== 'undefined') {
   MediaStreamRecorder.MultiStreamRecorder = MultiStreamRecorder
 }
 
-function MultiStreamsMixer (arrayOfMediaStreams) {
-  // requires: chrome://flags/#enable-experimental-web-platform-features
-
+/**
+ * 多流合并为一个流
+ * requires: chrome://flags/#enable-experimental-web-platform-features
+ * @param arrayOfMediaStreams
+ * @constructor
+ */
+function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) {
   let videos = []
   let isStopDrawingFrames = false
 
   let canvas = document.createElement('canvas')
   let context = canvas.getContext('2d')
-  canvas.style = 'opacity:0;position:absolute;z-index:-1;top: -100000000;left:-1000000000; margin-top:-1000000000;margin-left:-1000000000;';
+  canvas.style = 'opacity:1;position:absolute;z-index:-1;top: -100000000;left:-1000000000; margin-top:-1000000000;margin-left:-1000000000;';
   (document.body || document.documentElement).appendChild(canvas)
 
   this.disableLogs = false
   this.frameInterval = 10
 
-  this.width = 640
-  this.height = 360
+  this.width = recorderWidth
+  this.height = recorderHeight
+  console.log('create canvas with ' + this.width + '*' + this.height)
 
   // use gain node to prevent echo
   this.useGainNode = true
@@ -1380,7 +1392,7 @@ function StereoAudioRecorderHelper (mediaStream, root) {
 
     if (isPCM) {
       // our final binary blob
-      let blob = new Blob([convertoFloat32ToInt16(interleaved)], {
+      let blob = new window.Blob([convertoFloat32ToInt16(interleaved)], {
         type: 'audio/pcm'
       })
 
