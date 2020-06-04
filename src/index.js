@@ -1,4 +1,3 @@
-let container = document.getElementById('mCSB_2')
 let index = 1
 let timeInterval = document.querySelector('#time-interval') ? parseInt(document.querySelector('#time-interval').value) : (60 * 1000)
 let multiStreamRecorder
@@ -7,7 +6,7 @@ const recorderOptions = {
   mimeType: 'video/webm;codecs=vp8',
   video: {
     width: 320,
-    height: 270,
+    height: 240,
     frameRate: 5
   }
 }
@@ -31,27 +30,29 @@ function stopRecording () {
  * 开始取流和录制
  * @private
  */
-function startRecording () {
+async function startRecording () {
   this.disabled = true
-  let constraints = {
+
+  // TODO: 一开始不添加音频的话，后续也无法添加音频流，因为audioSources无法动态关联
+  let audioStream = await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: false
-  }
-  console.log('getUserMedia audio constraints: \n', JSON.stringify(constraints, null, '  '))
-  navigator.mediaDevices.getUserMedia(constraints).then(function (audioStream) {
-    console.log('get audioStream success: ', audioStream.id)
-    streamList.push(audioStream)
-    let mediaConstraints = {
-      audio: false,
-      video: {
-        width: { max: 320 },
-        height: { max: 270 }
-      }
-    }
-    console.log('getUserMedia video constraints: \n', JSON.stringify(mediaConstraints, null, '  '))
-    navigator.mediaDevices.getUserMedia(mediaConstraints).then(onMediaSuccess).catch(onMediaError)
-  }).catch(function () {
   })
+  console.warn('get audioStream success: ', audioStream.id)
+  streamList.push(audioStream)
+
+  // 获取视频
+  let mediaConstraints = {
+    audio: false,
+    video: {
+      width: { max: 640 },
+      height: { max: 360 }
+    }
+  }
+  console.log('getUserMedia video constraints: ', JSON.stringify(mediaConstraints, null, '  '))
+  let videoStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
+  streamList.push(videoStream)
+  onMediaSuccess(videoStream)
 }
 
 /**
@@ -65,9 +66,9 @@ function onMediaError (e) {
 /**
  * 取流成功
  * @param stream
+ * @returns {Promise<void>}
  */
 async function onMediaSuccess (stream) {
-  streamList.push(stream)
   let video = document.createElement('video')
   video.autoplay = true
   video = mergeProps(video, {
@@ -77,11 +78,12 @@ async function onMediaSuccess (stream) {
   video.srcObject = stream
 
   video.addEventListener('loadedmetadata', function () {
-    console.warn('video loadedmetadata resolution: ' + video.videoWidth + '*' + video.videoHeight)
+    console.log('video loadedmetadata resolution: ' + video.videoWidth + '*' + video.videoHeight)
     if (multiStreamRecorder && multiStreamRecorder.stream) return
 
-    console.warn('create MultiStreamRecorder...')
+    console.log('create MultiStreamRecorder...')
     multiStreamRecorder = new MultiStreamRecorder(streamList, recorderOptions)
+    // multiStreamRecorder.mimeType = 'audio/wav' // check this line for audio/wav
     multiStreamRecorder.stream = stream
 
     multiStreamRecorder.previewStream = function (stream) {
@@ -113,7 +115,8 @@ function addAudioStream () {
   navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
     console.log('get audio stream success: ' + stream.id)
     streamList.push(stream)
-    multiStreamRecorder.addStream(stream)
+    console.log('add stream to recorder')
+    multiStreamRecorder.addStreams(stream)
   }).catch(onMediaError)
 }
 
@@ -213,6 +216,7 @@ async function getStreamList () {
 }
 
 function showVideo (stream) {
+  console.log('show local video')
   const span = document.createElement('span')
   const video = document.createElement('video')
   video.style.width = '200px'
@@ -238,10 +242,23 @@ function appendLink (blob) {
   a.target = '_blank'
   a.innerHTML = 'Open Recorded ' + (blob.type === 'audio/ogg' ? 'Audio' : 'Video') + ' No. ' + (index++) + ' (Size: ' + bytesToSize(blob.size) + ') Time Length: ' + getTimeLength(timeInterval)
   a.href = url
+  downloadArea.appendChild(a)
+  downloadArea.appendChild(document.createElement('hr'))
 
-  container.appendChild(a)
-  container.appendChild(document.createElement('hr'))
   download(blob)
+  showLocalPreview(url)
+}
+
+/**
+ * 显示本地录制预览
+ * @param url
+ */
+function showLocalPreview (url) {
+  let video = document.getElementsByTagName('video')[0]
+  video.src = video.srcObject = null
+  video.muted = false
+  video.volume = 1
+  video.src = url
 }
 
 /**
@@ -257,8 +274,8 @@ function download (blob) {
   a.download = fileName
   // 自动下载
   // a.click()
-  container.appendChild(a)
-  container.appendChild(document.createElement('hr'))
+  downloadArea.appendChild(a)
+  downloadArea.appendChild(document.createElement('hr'))
 }
 
 /**

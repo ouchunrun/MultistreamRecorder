@@ -8,17 +8,22 @@ function MediaStreamRecorder (mediaStream) {
     throw 'MediaStream is mandatory.'
   }
 
+  // Reference to "MediaRecorder.js"
+  let mediaRecorder
   // void start(optional long timeSlice)
   // timestamp to fire "ondataavailable"
   this.start = function (timeSlice) {
     let Recorder
 
     if (typeof MediaRecorder !== 'undefined') {
+      console.warn('MediaRecorderWrapper')
       Recorder = MediaRecorderWrapper
     } else if (IsChrome || IsOpera || IsEdge) {
       if (this.mimeType.indexOf('video') !== -1) {
+        console.warn('WhammyRecorder')
         Recorder = WhammyRecorder
       } else if (this.mimeType.indexOf('audio') !== -1) {
+        console.warn('StereoAudioRecorder')
         Recorder = StereoAudioRecorder
       }
     }
@@ -122,9 +127,6 @@ function MediaStreamRecorder (mediaStream) {
 
   // logs are enabled by default
   this.disableLogs = false
-
-  // Reference to "MediaRecorder.js"
-  let mediaRecorder
 }
 
 // ______________________
@@ -162,12 +164,13 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   if (!options.video.height) {
     options.video.height = defaultHeight
   }
-  console.warn('MultiStreamRecorder options: ', JSON.stringify(options, null, '  '))
+  console.info('MultiStreamRecorder options: ', JSON.stringify(options, null, '  '))
 
   this.start = function (timeSlice) {
     console.log('mediaRecorder start ...')
     // github/muaz-khan/MultiStreamsMixer
     mixer = new MultiStreamsMixer(arrayOfMediaStreams, options.video.width, options.video.height)
+    self.mixer = mixer
 
     if (getVideoTracks().length) {
       mixer.frameInterval = options.frameInterval || frameInterval
@@ -177,11 +180,11 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     }
 
     if (typeof self.previewStream === 'function') {
-      self.previewStream(mixer.getMixedStream())
+      self.previewStream(mixer.getMixedStream)
     }
 
     // record using MediaRecorder API
-    mediaRecorder = new MediaStreamRecorder(mixer.getMixedStream())
+    mediaRecorder = new MediaStreamRecorder(mixer.getMixedStream)
 
     for (let prop in self) {
       if (typeof self[prop] !== 'function') {
@@ -258,8 +261,7 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     if (!(streams instanceof Array)) {
       streams = [streams]
     }
-
-    arrayOfMediaStreams.concat(streams)
+    // arrayOfMediaStreams.concat(streams)
 
     if (!mediaRecorder || !mixer) {
       return
@@ -289,12 +291,8 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   }
 
   this.onstop = function () {}
-
   // for debugging
   this.name = 'MultiStreamRecorder'
-  this.toString = function () {
-    return this.name
-  }
 }
 
 if (typeof MediaStreamRecorder !== 'undefined') {
@@ -305,6 +303,8 @@ if (typeof MediaStreamRecorder !== 'undefined') {
  * 多流合并为一个流
  * requires: chrome://flags/#enable-experimental-web-platform-features
  * @param arrayOfMediaStreams
+ * @param recorderWidth
+ * @param recorderHeight
  * @constructor
  */
 function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) {
@@ -327,6 +327,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
   this.useGainNode = true
 
   let self = this
+  window.Mixer = self
 
   // _____________________________
   // Cross-Browser-Declarations.js
@@ -339,7 +340,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
   }
   /* jshint -W079 */
   let URL = window.URL || window.webkitURL
-  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.webkitGetUserMedia
+  // navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.webkitGetUserMedia
   let MediaStream = window.MediaStream || window.webkitMediaStream
   /* global MediaStream:true */
   if (typeof MediaStream !== 'undefined') {
@@ -490,13 +491,6 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
       })
     }
 
-    let fullcanvas
-    arrayOfMediaStreams.forEach(function (stream) {
-      if (stream.fullcanvas) {
-        fullcanvas = true
-      }
-    })
-
     return mixedVideoStream
   }
 
@@ -547,6 +541,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
       audioTracksLength++
       let audioSource = self.audioContext.createMediaStreamSource(stream)
       if (self.useGainNode === true) {
+        //  将音频输出到一个媒体流节点上
         audioSource.connect(self.gainNode)
       }
       self.audioSources.push(audioSource)
@@ -555,7 +550,6 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
     if (!audioTracksLength) {
       return
     }
-
     self.audioDestination = self.audioContext.createMediaStreamDestination()
     self.audioSources.forEach(function (audioSource) {
       audioSource.connect(self.audioDestination)
@@ -565,7 +559,6 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
 
   function getVideo (stream) {
     let video = document.createElement('video')
-
     if ('srcObject' in video) {
       video.srcObject = stream
     } else {
@@ -591,24 +584,35 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
     if (!(streams instanceof Array)) {
       streams = [streams]
     }
-
     arrayOfMediaStreams.concat(streams)
 
     streams.forEach(function (stream) {
-      if (stream.getVideoTracks().length) {
+      /**
+       * 把后续添加的视频流添加到video里面进行recorder
+       */
+      if (stream.getVideoTracks().length > 0) {
+        console.warn('添加新的视频track')
         let video = getVideo(stream)
         video.stream = stream
         videos.push(video)
       }
 
-      if (stream.getAudioTracks().length && self.audioContext) {
-        let audioSource = self.audioContext.createMediaStreamSource(stream)
-        if (!self.audioDestination) {
-          console.warn('audioDestination is not exist!')
-          self.audioDestination = self.audioContext.createMediaStreamDestination()
+      /**
+       * 处理添加的音频
+       */
+      if (stream.getAudioTracks().length) {
+        if (self.audioSources && self.audioSources.length) {
+          console.warn('audioSources exist before')
+          if (stream.getAudioTracks().length && self.audioContext) {
+            var audioSource = self.audioContext.createMediaStreamSource(stream)
+            audioSource.connect(self.audioDestination)
+            self.audioSources.push(audioSource)
+          }
+        } else {
+          console.error('audioSources 不存在！！无法添加音频')
+          window.alert('audioSources 不存在！！无法添加音频')
         }
-        audioSource.connect(self.audioDestination)
-        self.audioSources.push(audioSource)
+        console.warn('self.audioSources: ', self.audioSources)
       }
     })
   }
@@ -674,7 +678,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
     return this.name
   }
 
-  this.getMixedStream = getMixedStream
+  this.getMixedStream = getMixedStream()
 }
 
 // _____________________________
@@ -1035,6 +1039,7 @@ function MediaRecorderWrapper (mediaStream) {
     // i.e. stop recording when <video> is paused by the user; and auto restart recording
     // when video is resumed. E.g. yourStream.getVideoTracks()[0].muted = true; // it will auto-stop recording.
     if (self.ignoreMutedMedia === true) {
+      //  用以指定 MediaRecorder是否录制无声的输入源. 如果这个属性是false. 录制器对象MediaRecorder  会录制无声的音频或者黑屏的视频, 默认值是false
       mediaRecorder.ignoreMutedMedia = true
     }
     let firedOnDataAvailableOnce = false
