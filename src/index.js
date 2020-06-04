@@ -3,10 +3,10 @@ let timeInterval = document.querySelector('#time-interval') ? parseInt(document.
 let multiStreamRecorder
 let streamList = []
 const recorderOptions = {
-  mimeType: 'video/webm;codecs=vp8',
+  mimeType: 'video/webm;codecs=h264	',
   video: {
-    width: 320,
-    height: 240,
+    width: 1280,
+    height: 720,
     frameRate: 5
   }
 }

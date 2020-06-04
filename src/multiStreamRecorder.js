@@ -122,8 +122,8 @@ function MediaStreamRecorder (mediaStream) {
   // StereoAudioRecorder || WhammyRecorder || MediaRecorderWrapper || GifRecorder
   this.recorderType = null
 
-  // video/webm;codecs=vp8 or audio/webm or audio/ogg or audio/wav
-  this.mimeType = 'video/webm;codecs=vp8'
+  // video/webm;codecs=h264 or audio/webm or audio/ogg or audio/wav
+  this.mimeType = 'video/webm;codecs=h264'
 
   // logs are enabled by default
   this.disableLogs = false
@@ -146,7 +146,7 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   let defaultHeight = 720
   let frameInterval = 10
   options = options || {
-    mimeType: 'video/webm;codecs=vp8',
+    mimeType: 'video/webm;codecs=h264',
     video: {
       width: 1280,
       height: 720
@@ -843,11 +843,11 @@ function invokeSaveAsDialog (file, fileName) {
 
   if (!file.type) {
     try {
-      file.type = 'video/webm;codecs=vp8'
+      file.type = 'video/webm;codecs=h264'
     } catch (e) {}
   }
 
-  let fileExtension = (file.type || 'video/webm;codecs=vp8').split('/')[1]
+  let fileExtension = (file.type || 'video/webm;codecs=h264').split('/')[1]
 
   if (fileName && fileName.indexOf('.') !== -1) {
     let splitted = fileName.split('.')
@@ -975,7 +975,7 @@ function MediaRecorderWrapper (mediaStream) {
     this.timeSlice = timeSlice || 5000
 
     if (!self.mimeType) {
-      self.mimeType = 'video/webm;codecs=vp8'
+      self.mimeType = 'video/webm;codecs=h264'
     }
 
     if (self.mimeType.indexOf('audio') !== -1) {
@@ -1056,7 +1056,7 @@ function MediaRecorderWrapper (mediaStream) {
       }
       firedOnDataAvailableOnce = true
       let blob = self.getNativeBlob ? e.data : new window.Blob([e.data], {
-        type: self.mimeType || 'video/webm;codecs=vp8'
+        type: self.mimeType || 'video/webm;codecs=h264'
       })
 
       self.ondataavailable(blob)
@@ -2387,7 +2387,7 @@ let Whammy = (function () {
       }
 
       return new Blob(ebml, {
-        type: 'video/webm;codecs=vp8'
+        type: 'video/webm;codecs=h264'
       })
     }
 
