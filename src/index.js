@@ -5,8 +5,8 @@ const streamList = []
 const recorderOptions = {
   mimeType: 'video/webm;codecs=vp8',
   video: {
-    width: 1280,
-    height: 720,
+    width: 1920,
+    height: 1080,
     frameRate: 15
   }
 }
@@ -21,12 +21,25 @@ function stopRecording () {
   }
   multiStreamRecorder.stop()
   multiStreamRecorder.stream.stop()
+
   // stop all stream
   streamList.forEach(function (stream) {
     stream.getTracks().forEach(function (track) {
       track.stop()
     })
   })
+
+  // 停止录制后删除所有 canvas
+  let canvasList = document.getElementsByTagName('canvas')
+  for (let i = canvasList.length - 1; i >= 0; i--) {
+    let idObject = canvasList[i]
+    if (idObject != null) {
+      idObject.parentNode.removeChild(idObject)
+    }
+  }
+
+  // 停止录制之后才可以保存，否则没有数据
+  document.getElementById('save').disabled = false
 }
 
 /**
@@ -36,7 +49,7 @@ function savingToDatabase () {
   if (!multiStreamRecorder) {
     return
   }
-  console.warn('Audio Record and saving to database')
+  console.warn('Audio Record and saving to local')
   multiStreamRecorder.save()
 }
 
@@ -254,7 +267,7 @@ function appendLink (blob) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.target = '_blank'
-  a.innerHTML = 'Open Recorded ' + (blob.type === 'audio/ogg' ? 'Audio' : 'Video') + ' No. ' + (index++) + ' (Size: ' + bytesToSize(blob.size) + ') Time Length: ' + getTimeLength(timeInterval)
+  a.innerHTML = '点击在线预览 ' + (blob.type === 'audio/ogg' ? 'Audio' : 'Video') + ' No. ' + (index++) + ' (Size: ' + bytesToSize(blob.size) + ')'
   a.href = url
   downloadArea.appendChild(a)
   downloadArea.appendChild(document.createElement('hr'))
@@ -313,4 +326,64 @@ function bytesToSize (bytes) {
 function getTimeLength (milliseconds) {
   const data = new Date(milliseconds)
   return data.getUTCHours() + ' hours, ' + data.getUTCMinutes() + ' minutes and ' + data.getUTCSeconds() + ' second(s)'
+}
+
+/**
+ * 处理上传为blob文件：recorder 完成后保存的数据文件
+ * @type {HTMLElement}
+ */
+let input = document.getElementById('readBlobFile')
+input.onchange = function () {
+  let file = this.files[0]
+  console.log('file: ', file)
+  if (file) {
+    let reader = new FileReader()
+    reader.onload = function () {
+      let arrayBuffer = this.result
+      let blob = new Blob([new Int8Array(arrayBuffer)])
+      let blobURL = URL.createObjectURL(blob)
+      console.log('blobURL: ', blobURL)
+
+      const video = document.createElement('video')
+      video.style.height = '200px'
+      video.controls = true
+      video.autoplay = true
+      video.src = blobURL
+
+      video.addEventListener('loadedmetadata', function () {
+        const res = 'video resolution: ' + video.videoWidth + '*' + video.videoHeight
+        console.warn('预览本地流: ' + res)
+      })
+      video.play()
+      document.body.appendChild(video)
+    }
+    reader.readAsArrayBuffer(file)
+  }
+  input.value = ''
+}
+
+window.onload = function () {
+  // 输出支持的recorder 类型
+  console.log('************************************start****************************')
+  var mimeTypes = [
+    ['video/webm', ['Chrome', 'Firefox', 'Safari']],
+    ['video/mp4', []],
+    ['video/mpeg', []],
+    ['audio/wav', []],
+    ['audio/webm', ['Chrome', 'Firefox', 'Safari']],
+    ['audio/ogg', ['Firefox']],
+    ['video/webm;codecs=vp8', ['Chrome', 'Firefox', 'Safari']],
+    ['video/webm;codecs=vp9', ['Chrome']],
+    ['video/webm;codecs=h264', ['Chrome']],
+    ['video/x-matroska;codecs=avc1', ['Chrome']]
+  ]
+
+  mimeTypes.forEach(item => {
+    if (MediaRecorder.isTypeSupported(item[0])) {
+      console.log('%c' + item[0] + '%c is Supported for ' + item[1], 'color:blue;', 'color:#05aa9a;')
+    } else {
+      console.log('%c' + item[0] + `%c is NOT Supported!`, 'color:blue;', 'color:#f00;')
+    }
+  })
+  console.log('************************************end******************************')
 }

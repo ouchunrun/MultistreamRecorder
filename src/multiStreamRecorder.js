@@ -13,11 +13,9 @@ function MediaStreamRecorder (mediaStream) {
   // void start(optional long timeSlice)
   // timestamp to fire "ondataavailable"
   this.start = function (timeSlice) {
-    console.warn('timeSlice: ', timeSlice)
     let Recorder
 
     if (typeof MediaRecorder !== 'undefined') {
-      console.warn('MediaRecorderWrapper')
       Recorder = MediaRecorderWrapper
     } else if (IsChrome || IsOpera || IsEdge) {
       if (this.mimeType.indexOf('video') !== -1) {
@@ -86,20 +84,21 @@ function MediaStreamRecorder (mediaStream) {
     console.warn('stopped..', error)
   }
 
-  this.save = function (allBlobs, fileName) {
-    allBlobs = allBlobs || mediaRecorder.blobs
-    if (!allBlobs || (allBlobs instanceof Array && !allBlobs.length)) {
+  this.save = function () {
+    if (mediaRecorder.blobs && mediaRecorder.blobs.length) {
       if (!mediaRecorder) {
         return
       }
 
       ConcatenateBlobs(mediaRecorder.blobs, mediaRecorder.blobs[0].type, function (concatenatedBlob) {
-        console.warn('concatenatedBlob: ', concatenatedBlob)
+        console.log('concatenatedBlob: ', concatenatedBlob)
+        console.log('Concatenated. Resulting blob size:' + bytesToSize(mediaRecorder.blobs[0].size) + 'Playing-back locally in &lt;audio&gt; tag.')
+
+        streamPreview(concatenatedBlob)
         invokeSaveAsDialog(concatenatedBlob)
       })
-    }
-    if ((!(allBlobs instanceof Array) && allBlobs) && (allBlobs instanceof Array && allBlobs.length)) {
-      invokeSaveAsDialog(allBlobs, fileName)
+    } else {
+      console.error('mediaRecorder.blobs is empty: ' + mediaRecorder.blobs)
     }
   }
 
@@ -236,9 +235,9 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     }
   }
 
-  this.save = function (file, fileName) {
+  this.save = function () {
     if (mediaRecorder) {
-      mediaRecorder.save(file, fileName)
+      mediaRecorder.save()
     }
   }
 
@@ -323,8 +322,8 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
   const canvas = document.createElement('canvas')
   const context = canvas.getContext('2d')
   canvas.style = 'opacity:1;position:absolute;z-index:-1;top: -100000000;left:-1000000000; margin-top:-1000000000;margin-left:-1000000000;';
-  (document.body || document.documentElement).appendChild(canvas)
-
+  document.body.appendChild(canvas)
+  console.log('add canvas element')
   this.disableLogs = false
   this.frameInterval = 10
 
@@ -839,6 +838,31 @@ function dropFirstFrame (arr) {
 }
 
 /**
+ * 生成video，预览本地流
+ * @param blobs 获取的blob
+ * @param stream 获取的stream
+ */
+function streamPreview (blobs, stream) {
+  const video = document.createElement('video')
+  video.style.height = '200px'
+  video.controls = true
+  video.autoplay = true
+
+  if (blobs) {
+    video.src = window.URL.createObjectURL(blobs)
+  } else if (stream) {
+    video.srcObject = stream
+  }
+
+  video.addEventListener('loadedmetadata', function () {
+    const res = 'video resolution: ' + video.videoWidth + '*' + video.videoHeight
+    console.warn('预览本地流: ' + res)
+  })
+  video.play()
+  document.body.appendChild(video)
+}
+
+/**
  * @param {Blob} file - File or Blob object. This parameter is required.
  * @param {string} fileName - Optional file name e.g. "Recorded-Video.webm"
  * @example
@@ -873,6 +897,7 @@ function invokeSaveAsDialog (file, fileName) {
   } else if (typeof navigator.msSaveBlob !== 'undefined') {
     return navigator.msSaveBlob(file, fileFullName)
   }
+  console.log('download fileFullName: ', fileFullName)
 
   const hyperlink = document.createElement('a')
   hyperlink.href = window.URL.createObjectURL(file)
@@ -1251,7 +1276,9 @@ function MediaRecorderWrapper (mediaStream) {
     this.stop()
   }
 
-  this.onstop = function () {}
+  this.onstop = function () {
+
+  }
 
   // Reference to "MediaRecorder" object
   let mediaRecorder
