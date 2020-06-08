@@ -1,13 +1,13 @@
 let index = 1
-let timeInterval = document.querySelector('#time-interval') ? parseInt(document.querySelector('#time-interval').value) : (60 * 1000)
+const timeInterval = document.querySelector('#time-interval') ? parseInt(document.querySelector('#time-interval').value) : (60 * 1000)
 let multiStreamRecorder
-let streamList = []
+const streamList = []
 const recorderOptions = {
-  mimeType: 'video/webm;codecs=h264	',
+  mimeType: 'video/webm;codecs=vp8',
   video: {
     width: 1280,
     height: 720,
-    frameRate: 5
+    frameRate: 15
   }
 }
 
@@ -16,6 +16,9 @@ const recorderOptions = {
  * @private
  */
 function stopRecording () {
+  if (!multiStreamRecorder) {
+    return
+  }
   multiStreamRecorder.stop()
   multiStreamRecorder.stream.stop()
   // stop all stream
@@ -27,6 +30,17 @@ function stopRecording () {
 }
 
 /**
+ * Audio Record and saving to database
+ */
+function savingToDatabase () {
+  if (!multiStreamRecorder) {
+    return
+  }
+  console.warn('Audio Record and saving to database')
+  multiStreamRecorder.save()
+}
+
+/**
  * 开始取流和录制
  * @private
  */
@@ -34,7 +48,7 @@ async function startRecording () {
   this.disabled = true
 
   // TODO: 一开始不添加音频的话，后续也无法添加音频流，因为audioSources无法动态关联
-  let audioStream = await navigator.mediaDevices.getUserMedia({
+  const audioStream = await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: false
   })
@@ -42,7 +56,7 @@ async function startRecording () {
   streamList.push(audioStream)
 
   // 获取视频
-  let mediaConstraints = {
+  const mediaConstraints = {
     audio: false,
     video: {
       width: { max: 640 },
@@ -50,7 +64,7 @@ async function startRecording () {
     }
   }
   console.log('getUserMedia video constraints: ', JSON.stringify(mediaConstraints, null, '  '))
-  let videoStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
+  const videoStream = await navigator.mediaDevices.getUserMedia(mediaConstraints)
   streamList.push(videoStream)
   onMediaSuccess(videoStream)
 }
@@ -108,7 +122,7 @@ async function onMediaSuccess (stream) {
  * 添加音频流
  */
 function addAudioStream () {
-  let constraints = {
+  const constraints = {
     audio: true,
     video: false
   }
@@ -129,7 +143,7 @@ function addScreenStream () {
   if (!multiStreamRecorder || !multiStreamRecorder.stream) {
     return
   }
-  let screenConstraints = {
+  const screenConstraints = {
     audio: true,
     video: {
       width: { max: '640' },
@@ -172,22 +186,22 @@ function addScreenStream () {
  * @returns {Promise<Array>}
  */
 async function getStreamList () {
-  let localAudioStream = await navigator.mediaDevices.getUserMedia({
+  const localAudioStream = await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: false
   })
 
-  let remoteAudioStream = await navigator.mediaDevices.getUserMedia({
+  const remoteAudioStream = await navigator.mediaDevices.getUserMedia({
     audio: true,
     video: false
   })
 
-  let videoStream = await navigator.mediaDevices.getUserMedia({
+  const videoStream = await navigator.mediaDevices.getUserMedia({
     audio: false,
     video: { width: 640, height: 360 }
   })
 
-  let presentStream = await navigator.mediaDevices.getUserMedia({
+  const presentStream = await navigator.mediaDevices.getUserMedia({
     audio: false,
     video: { width: 1920, height: 1080 }
   })
@@ -237,8 +251,8 @@ function showVideo (stream) {
  * @param blob
  */
 function appendLink (blob) {
-  let url = URL.createObjectURL(blob)
-  let a = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
   a.target = '_blank'
   a.innerHTML = 'Open Recorded ' + (blob.type === 'audio/ogg' ? 'Audio' : 'Video') + ' No. ' + (index++) + ' (Size: ' + bytesToSize(blob.size) + ') Time Length: ' + getTimeLength(timeInterval)
   a.href = url
@@ -254,7 +268,7 @@ function appendLink (blob) {
  * @param url
  */
 function showLocalPreview (url) {
-  let video = document.getElementsByTagName('video')[0]
+  const video = document.getElementsByTagName('video')[0]
   video.src = video.srcObject = null
   video.muted = false
   video.volume = 1
@@ -268,7 +282,7 @@ function showLocalPreview (url) {
 function download (blob) {
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement('a')
-  let fileName = Date.now() + '.mp4'
+  const fileName = Date.now() + '.mp4'
   a.href = url
   a.innerHTML = '点击下载 ' + fileName
   a.download = fileName
@@ -284,10 +298,10 @@ function download (blob) {
  * @returns {string}
  */
 function bytesToSize (bytes) {
-  let k = 1000
-  let sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  const k = 1000
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
   if (bytes === 0) return '0 Bytes'
-  let i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10)
+  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10)
   return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i]
 }
 
@@ -297,6 +311,6 @@ function bytesToSize (bytes) {
  * @returns {string}
  */
 function getTimeLength (milliseconds) {
-  let data = new Date(milliseconds)
+  const data = new Date(milliseconds)
   return data.getUTCHours() + ' hours, ' + data.getUTCMinutes() + ' minutes and ' + data.getUTCSeconds() + ' second(s)'
 }

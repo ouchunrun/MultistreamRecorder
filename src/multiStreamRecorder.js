@@ -13,6 +13,7 @@ function MediaStreamRecorder (mediaStream) {
   // void start(optional long timeSlice)
   // timestamp to fire "ondataavailable"
   this.start = function (timeSlice) {
+    console.warn('timeSlice: ', timeSlice)
     let Recorder
 
     if (typeof MediaRecorder !== 'undefined') {
@@ -47,7 +48,7 @@ function MediaStreamRecorder (mediaStream) {
     mediaRecorder = new Recorder(mediaStream)
     mediaRecorder.blobs = []
 
-    let self = this
+    const self = this
     mediaRecorder.ondataavailable = function (data) {
       mediaRecorder.blobs.push(data)
       self.ondataavailable(data)
@@ -85,18 +86,21 @@ function MediaStreamRecorder (mediaStream) {
     console.warn('stopped..', error)
   }
 
-  this.save = function (file, fileName) {
-    if (!file) {
+  this.save = function (allBlobs, fileName) {
+    allBlobs = allBlobs || mediaRecorder.blobs
+    if (!allBlobs || (allBlobs instanceof Array && !allBlobs.length)) {
       if (!mediaRecorder) {
         return
       }
 
       ConcatenateBlobs(mediaRecorder.blobs, mediaRecorder.blobs[0].type, function (concatenatedBlob) {
+        console.warn('concatenatedBlob: ', concatenatedBlob)
         invokeSaveAsDialog(concatenatedBlob)
       })
-      return
     }
-    invokeSaveAsDialog(file, fileName)
+    if ((!(allBlobs instanceof Array) && allBlobs) && (allBlobs instanceof Array && allBlobs.length)) {
+      invokeSaveAsDialog(allBlobs, fileName)
+    }
   }
 
   this.pause = function () {
@@ -122,8 +126,8 @@ function MediaStreamRecorder (mediaStream) {
   // StereoAudioRecorder || WhammyRecorder || MediaRecorderWrapper || GifRecorder
   this.recorderType = null
 
-  // video/webm;codecs=h264 or audio/webm or audio/ogg or audio/wav
-  this.mimeType = 'video/webm;codecs=h264'
+  // video/webm;codecs=vp8 or audio/webm or audio/ogg or audio/wav
+  this.mimeType = 'video/webm;codecs=vp8'
 
   // logs are enabled by default
   this.disableLogs = false
@@ -139,14 +143,14 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     arrayOfMediaStreams = [arrayOfMediaStreams]
   }
 
-  let self = this
+  const self = this
   let mixer
   let mediaRecorder
-  let defaultWidth = 1280
-  let defaultHeight = 720
-  let frameInterval = 10
+  const defaultWidth = 1280
+  const defaultHeight = 720
+  const frameInterval = 10
   options = options || {
-    mimeType: 'video/webm;codecs=h264',
+    mimeType: 'video/webm;codecs=vp8',
     video: {
       width: 1280,
       height: 720
@@ -186,7 +190,7 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     // record using MediaRecorder API
     mediaRecorder = new MediaStreamRecorder(mixer.getMixedStream)
 
-    for (let prop in self) {
+    for (const prop in self) {
       if (typeof self[prop] !== 'function') {
         mediaRecorder[prop] = self[prop]
       }
@@ -197,12 +201,11 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
     }
 
     mediaRecorder.onstop = self.onstop
-
     mediaRecorder.start(timeSlice)
   }
 
   function getVideoTracks () {
-    let tracks = []
+    const tracks = []
     arrayOfMediaStreams.forEach(function (stream) {
       stream.getVideoTracks().forEach(function (track) {
         tracks.push(track)
@@ -230,6 +233,12 @@ function MultiStreamRecorder (arrayOfMediaStreams, options) {
   this.resume = function () {
     if (mediaRecorder) {
       mediaRecorder.resume()
+    }
+  }
+
+  this.save = function (file, fileName) {
+    if (mediaRecorder) {
+      mediaRecorder.save(file, fileName)
     }
   }
 
@@ -311,8 +320,8 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
   let videos = []
   let isStopDrawingFrames = false
 
-  let canvas = document.createElement('canvas')
-  let context = canvas.getContext('2d')
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
   canvas.style = 'opacity:1;position:absolute;z-index:-1;top: -100000000;left:-1000000000; margin-top:-1000000000;margin-left:-1000000000;';
   (document.body || document.documentElement).appendChild(canvas)
 
@@ -326,22 +335,22 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
   // use gain node to prevent echo
   this.useGainNode = true
 
-  let self = this
+  const self = this
   window.Mixer = self
 
   // _____________________________
   // Cross-Browser-Declarations.js
 
   // WebAudio API representer
-  let AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext
+  const AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext
   if (!AudioContext) {
     console.error('AudioContext is not supported!')
     return
   }
   /* jshint -W079 */
-  let URL = window.URL || window.webkitURL
+  const URL = window.URL || window.webkitURL
   // navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.webkitGetUserMedia
-  let MediaStream = window.MediaStream || window.webkitMediaStream
+  const MediaStream = window.MediaStream || window.webkitMediaStream
   /* global MediaStream:true */
   if (typeof MediaStream !== 'undefined') {
     if (!('getVideoTracks' in MediaStream.prototype)) {
@@ -350,7 +359,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
           return []
         }
 
-        let tracks = []
+        const tracks = []
         this.getTracks.forEach(function (track) {
           if (track.kind.toString().indexOf('video') !== -1) {
             tracks.push(track)
@@ -364,7 +373,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
           return []
         }
 
-        let tracks = []
+        const tracks = []
         this.getTracks.forEach(function (track) {
           if (track.kind.toString().indexOf('audio') !== -1) {
             tracks.push(track)
@@ -384,7 +393,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
     }
   }
 
-  let Storage = {}
+  const Storage = {}
   Storage.AudioContext = AudioContext || window.webkitAudioContext
 
   this.startDrawingFrames = function () {
@@ -396,10 +405,10 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
       return
     }
 
-    let videosLength = videos.length
+    const videosLength = videos.length
 
     let fullcanvas = false
-    let remaining = []
+    const remaining = []
     videos.forEach(function (video) {
       if (!video.stream) {
         video.stream = {}
@@ -482,9 +491,9 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
 
   function getMixedStream () {
     isStopDrawingFrames = false
-    let mixedVideoStream = getMixedVideoStream()
+    const mixedVideoStream = getMixedVideoStream()
 
-    let mixedAudioStream = getMixedAudioStream()
+    const mixedAudioStream = getMixedAudioStream()
     if (mixedAudioStream) {
       mixedAudioStream.getAudioTracks().forEach(function (track) {
         mixedVideoStream.addTrack(track)
@@ -507,7 +516,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
       console.error('Upgrade to latest Chrome or otherwise enable this flag: chrome://flags/#enable-experimental-web-platform-features')
     }
 
-    let videoStream = new MediaStream()
+    const videoStream = new MediaStream()
     capturedStream.getVideoTracks().forEach(function (track) {
       videoStream.addTrack(track)
     })
@@ -539,7 +548,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
       }
 
       audioTracksLength++
-      let audioSource = self.audioContext.createMediaStreamSource(stream)
+      const audioSource = self.audioContext.createMediaStreamSource(stream)
       if (self.useGainNode === true) {
         //  将音频输出到一个媒体流节点上
         audioSource.connect(self.gainNode)
@@ -558,7 +567,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
   }
 
   function getVideo (stream) {
-    let video = document.createElement('video')
+    const video = document.createElement('video')
     if ('srcObject' in video) {
       video.srcObject = stream
     } else {
@@ -592,7 +601,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
        */
       if (stream.getVideoTracks().length > 0) {
         console.warn('添加新的视频track')
-        let video = getVideo(stream)
+        const video = getVideo(stream)
         video.stream = stream
         videos.push(video)
       }
@@ -666,7 +675,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
         return
       }
 
-      let video = getVideo(stream)
+      const video = getVideo(stream)
       video.stream = stream
       videos.push(video)
     })
@@ -684,7 +693,7 @@ function MultiStreamsMixer (arrayOfMediaStreams, recorderWidth, recorderHeight) 
 // _____________________________
 // Cross-Browser-Declarations.js
 
-let browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45';
+const browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45';
 
 (function (that) {
   if (typeof window !== 'undefined') {
@@ -731,9 +740,9 @@ let browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko
 })(typeof global !== 'undefined' ? global : window)
 
 // WebAudio API representer
-let AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext
+const AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext
 /* jshint -W079 */
-let URL = window.URL || window.webkitURL
+const URL = window.URL || window.webkitURL
 
 if (typeof navigator !== 'undefined') {
   navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.getUserMedia
@@ -744,12 +753,12 @@ if (typeof navigator !== 'undefined') {
   }
 }
 
-let IsEdge = navigator.userAgent.indexOf('Edge') !== -1 && (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob)
+const IsEdge = navigator.userAgent.indexOf('Edge') !== -1 && (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob)
 let IsOpera = false
 if (typeof opera !== 'undefined' && navigator.userAgent && navigator.userAgent.indexOf('OPR/') !== -1) {
   IsOpera = true
 }
-let IsChrome = !IsEdge && !IsEdge && !!navigator.webkitGetUserMedia
+const IsChrome = !IsEdge && !IsEdge && !!navigator.webkitGetUserMedia
 let MediaStream = window.MediaStream
 if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
   MediaStream = webkitMediaStream
@@ -763,7 +772,7 @@ if (typeof MediaStream !== 'undefined') {
         return []
       }
 
-      let tracks = []
+      const tracks = []
       this.getTracks.forEach(function (track) {
         if (track.kind.toString().indexOf('video') !== -1) {
           tracks.push(track)
@@ -777,7 +786,7 @@ if (typeof MediaStream !== 'undefined') {
         return []
       }
 
-      let tracks = []
+      const tracks = []
       this.getTracks.forEach(function (track) {
         if (track.kind.toString().indexOf('audio') !== -1) {
           tracks.push(track)
@@ -813,7 +822,7 @@ if (typeof location !== 'undefined') {
 // Merge all other data-types except "function"
 
 function mergeProps (mergein, mergeto) {
-  for (let t in mergeto) {
+  for (const t in mergeto) {
     if (typeof mergeto[t] !== 'function') {
       mergein[t] = mergeto[t]
     }
@@ -838,24 +847,26 @@ function dropFirstFrame (arr) {
  */
 function invokeSaveAsDialog (file, fileName) {
   if (!file) {
-    throw 'Blob object is required.'
+    throw Error('Blob object is required.')
   }
 
   if (!file.type) {
     try {
-      file.type = 'video/webm;codecs=h264'
-    } catch (e) {}
+      file.type = 'video/webm;codecs=vp8'
+    } catch (e) {
+      console.error(e)
+    }
   }
 
-  let fileExtension = (file.type || 'video/webm;codecs=h264').split('/')[1]
+  let fileExtension = (file.type || 'video/webm;codecs=vp8').split('/')[1]
 
   if (fileName && fileName.indexOf('.') !== -1) {
-    let splitted = fileName.split('.')
+    const splitted = fileName.split('.')
     fileName = splitted[0]
     fileExtension = splitted[1]
   }
 
-  let fileFullName = (fileName || (Math.round(Math.random() * 9999999999) + 888888888)) + '.' + fileExtension
+  const fileFullName = (fileName || (Math.round(Math.random() * 9999999999) + 888888888)) + '.' + fileExtension
 
   if (typeof navigator.msSaveOrOpenBlob !== 'undefined') {
     return navigator.msSaveOrOpenBlob(file, fileFullName)
@@ -863,8 +874,8 @@ function invokeSaveAsDialog (file, fileName) {
     return navigator.msSaveBlob(file, fileFullName)
   }
 
-  let hyperlink = document.createElement('a')
-  hyperlink.href = URL.createObjectURL(file)
+  const hyperlink = document.createElement('a')
+  hyperlink.href = window.URL.createObjectURL(file)
   hyperlink.target = '_blank'
   hyperlink.download = fileFullName
 
@@ -875,7 +886,7 @@ function invokeSaveAsDialog (file, fileName) {
     (document.body || document.documentElement).appendChild(hyperlink)
   }
 
-  let evt = new MouseEvent('click', {
+  const evt = new MouseEvent('click', {
     view: window,
     bubbles: true,
     cancelable: true
@@ -889,25 +900,25 @@ function invokeSaveAsDialog (file, fileName) {
 }
 
 function bytesToSize (bytes) {
-  let k = 1000
-  let sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  const k = 1000
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
   if (bytes === 0) {
     return '0 Bytes'
   }
-  let i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10)
+  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10)
   return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i]
 }
 
 // ______________ (used to handle stuff like http://goo.gl/xmE5eg) issue #129
 // ObjectStore.js
-let ObjectStore = {
+const ObjectStore = {
   AudioContext: AudioContext
 }
 
 function isMediaRecorderCompatible () {
-  let isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0
-  let isChrome = !!window.chrome && !isOpera
-  let isFirefox = typeof window.InstallTrigger !== 'undefined'
+  const isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0
+  const isChrome = !!window.chrome && !isOpera
+  const isFirefox = typeof window.InstallTrigger !== 'undefined'
 
   if (isFirefox) {
     return true
@@ -917,8 +928,8 @@ function isMediaRecorderCompatible () {
     return false
   }
 
-  let nVer = navigator.appVersion
-  let nAgt = navigator.userAgent
+  const nVer = navigator.appVersion
+  const nAgt = navigator.userAgent
   let fullVersion = '' + parseFloat(navigator.appVersion)
   let majorVersion = parseInt(navigator.appVersion, 10)
   let nameOffset, verOffset, ix
@@ -962,7 +973,7 @@ function isMediaRecorderCompatible () {
  */
 
 function MediaRecorderWrapper (mediaStream) {
-  let self = this
+  const self = this
 
   /**
    * This method records MediaStream.
@@ -975,7 +986,7 @@ function MediaRecorderWrapper (mediaStream) {
     this.timeSlice = timeSlice || 5000
 
     if (!self.mimeType) {
-      self.mimeType = 'video/webm;codecs=h264'
+      self.mimeType = 'video/webm;codecs=vp8'
     }
 
     if (self.mimeType.indexOf('audio') !== -1) {
@@ -1055,8 +1066,8 @@ function MediaRecorderWrapper (mediaStream) {
         return
       }
       firedOnDataAvailableOnce = true
-      let blob = self.getNativeBlob ? e.data : new window.Blob([e.data], {
-        type: self.mimeType || 'video/webm;codecs=h264'
+      const blob = self.getNativeBlob ? e.data : new window.Blob([e.data], {
+        type: self.mimeType || 'video/webm;codecs=vp8'
       })
 
       self.ondataavailable(blob)
@@ -1206,7 +1217,7 @@ function MediaRecorderWrapper (mediaStream) {
     if (this.dontFireOnDataAvailableEvent) {
       this.dontFireOnDataAvailableEvent = false
 
-      let disableLogs = self.disableLogs
+      const disableLogs = self.disableLogs
       self.disableLogs = true
       this.start(this.timeslice || 5000)
       self.disableLogs = disableLogs
@@ -1346,15 +1357,15 @@ function StereoAudioRecorderHelper (mediaStream, root) {
   // check device sample rate
   deviceSampleRate = ObjectStore.AudioContextConstructor.sampleRate
 
-  let leftchannel = []
-  let rightchannel = []
+  const leftchannel = []
+  const rightchannel = []
   let scriptprocessornode
   let recording = false
   let recordingLength = 0
-  let sampleRate = root.sampleRate || deviceSampleRate
-  let mimeType = root.mimeType || 'audio/wav'
-  let isPCM = mimeType.indexOf('audio/pcm') > -1
-  let numChannels = root.audioChannels || 2
+  const sampleRate = root.sampleRate || deviceSampleRate
+  const mimeType = root.mimeType || 'audio/wav'
+  const isPCM = mimeType.indexOf('audio/pcm') > -1
+  const numChannels = root.audioChannels || 2
 
   this.record = function () {
     recording = true
@@ -1375,9 +1386,9 @@ function StereoAudioRecorderHelper (mediaStream, root) {
 
     requestDataInvoked = true
     // clone stuff
-    let internalLeftChannel = leftchannel.slice(0)
-    let internalRightChannel = rightchannel.slice(0)
-    let internalRecordingLength = recordingLength
+    const internalLeftChannel = leftchannel.slice(0)
+    const internalRightChannel = rightchannel.slice(0)
+    const internalRecordingLength = recordingLength
 
     // reset the buffers for the new recording
     leftchannel.length = rightchannel.length = []
@@ -1385,19 +1396,19 @@ function StereoAudioRecorderHelper (mediaStream, root) {
     requestDataInvoked = false
 
     // we flat the left and right channels down
-    let leftBuffer = mergeBuffers(internalLeftChannel, internalRecordingLength)
+    const leftBuffer = mergeBuffers(internalLeftChannel, internalRecordingLength)
 
     let interleaved = leftBuffer
 
     // we interleave both channels together
     if (numChannels === 2) {
-      let rightBuffer = mergeBuffers(internalRightChannel, internalRecordingLength) // bug fixed via #70,#71
+      const rightBuffer = mergeBuffers(internalRightChannel, internalRecordingLength) // bug fixed via #70,#71
       interleaved = interleave(leftBuffer, rightBuffer)
     }
 
     if (isPCM) {
       // our final binary blob
-      let blob = new window.Blob([convertoFloat32ToInt16(interleaved)], {
+      const blob = new window.Blob([convertoFloat32ToInt16(interleaved)], {
         type: 'audio/pcm'
       })
 
@@ -1407,8 +1418,8 @@ function StereoAudioRecorderHelper (mediaStream, root) {
     }
 
     // we create our wav file
-    let buffer = new ArrayBuffer(44 + interleaved.length * 2)
-    let view = new DataView(buffer)
+    const buffer = new ArrayBuffer(44 + interleaved.length * 2)
+    const view = new DataView(buffer)
 
     // RIFF chunk descriptor
     writeUTFBytes(view, 0, 'RIFF')
@@ -1432,16 +1443,16 @@ function StereoAudioRecorderHelper (mediaStream, root) {
     view.setUint32(40, interleaved.length * 2, true)
 
     // write the PCM samples
-    let lng = interleaved.length
+    const lng = interleaved.length
     let index = 44
-    let volume = 1
+    const volume = 1
     for (let i = 0; i < lng; i++) {
       view.setInt16(index, interleaved[i] * (0x7FFF * volume), true)
       index += 2
     }
 
     // our final binary blob
-    let blob = new Blob([view], {
+    const blob = new Blob([view], {
       type: 'audio/wav'
     })
 
@@ -1460,8 +1471,8 @@ function StereoAudioRecorderHelper (mediaStream, root) {
   }
 
   function interleave (leftChannel, rightChannel) {
-    let length = leftChannel.length + rightChannel.length
-    let result = new Float32Array(length)
+    const length = leftChannel.length + rightChannel.length
+    const result = new Float32Array(length)
 
     let inputIndex = 0
 
@@ -1474,11 +1485,11 @@ function StereoAudioRecorderHelper (mediaStream, root) {
   }
 
   function mergeBuffers (channelBuffer, recordingLength) {
-    let result = new Float32Array(recordingLength)
+    const result = new Float32Array(recordingLength)
     let offset = 0
-    let lng = channelBuffer.length
+    const lng = channelBuffer.length
     for (let i = 0; i < lng; i++) {
-      let buffer = channelBuffer[i]
+      const buffer = channelBuffer[i]
       result.set(buffer, offset)
       offset += buffer.length
     }
@@ -1486,7 +1497,7 @@ function StereoAudioRecorderHelper (mediaStream, root) {
   }
 
   function writeUTFBytes (view, offset, string) {
-    let lng = string.length
+    const lng = string.length
     for (let i = 0; i < lng; i++) {
       view.setUint8(offset + i, string.charCodeAt(i))
     }
@@ -1494,7 +1505,7 @@ function StereoAudioRecorderHelper (mediaStream, root) {
 
   function convertoFloat32ToInt16 (buffer) {
     let l = buffer.length
-    let buf = new Int16Array(l)
+    const buf = new Int16Array(l)
 
     while (l--) {
       buf[l] = buffer[l] * 0xFFFF // convert to 16 bit
@@ -1503,18 +1514,18 @@ function StereoAudioRecorderHelper (mediaStream, root) {
   }
 
   // creates the audio context
-  let context = ObjectStore.AudioContextConstructor
+  const context = ObjectStore.AudioContextConstructor
 
   // creates a gain node
   ObjectStore.VolumeGainNode = context.createGain()
 
-  let volume = ObjectStore.VolumeGainNode
+  const volume = ObjectStore.VolumeGainNode
 
   // creates an audio node from the microphone incoming stream
   ObjectStore.AudioInput = context.createMediaStreamSource(mediaStream)
 
   // creates an audio node from the microphone incoming stream
-  let audioInput = ObjectStore.AudioInput
+  const audioInput = ObjectStore.AudioInput
 
   // connect the stream to the gain node
   audioInput.connect(volume)
@@ -1571,11 +1582,11 @@ function StereoAudioRecorderHelper (mediaStream, root) {
       return
     }
 
-    let left = e.inputBuffer.getChannelData(0)
+    const left = e.inputBuffer.getChannelData(0)
     leftchannel.push(new Float32Array(left))
 
     if (numChannels === 2) {
-      let right = e.inputBuffer.getChannelData(1)
+      const right = e.inputBuffer.getChannelData(1)
       rightchannel.push(new Float32Array(right))
     }
     recordingLength += bufferSize
@@ -1600,7 +1611,7 @@ function WhammyRecorder (mediaStream) {
 
     mediaRecorder = new WhammyRecorderHelper(mediaStream, this)
 
-    for (let prop in this) {
+    for (const prop in this) {
       if (typeof this[prop] !== 'function') {
         mediaRecorder[prop] = this[prop]
       }
@@ -1735,7 +1746,7 @@ function WhammyRecorderHelper (mediaStream, root) {
 
     requestDataInvoked = true
     // clone stuff
-    let internalFrames = whammy.frames.slice(0)
+    const internalFrames = whammy.frames.slice(0)
 
     // reset the frames for the new recording
 
@@ -1768,7 +1779,7 @@ function WhammyRecorderHelper (mediaStream, root) {
       return setTimeout(drawFrames, 100)
     }
 
-    let duration = new Date().getTime() - lastTime
+    const duration = new Date().getTime() - lastTime
     if (!duration) {
       return drawFrames()
     }
@@ -1805,51 +1816,51 @@ function WhammyRecorderHelper (mediaStream, root) {
     this.onstop()
   }
 
-  let canvas = document.createElement('canvas')
-  let context = canvas.getContext('2d')
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
 
   let video
   let lastTime
   let whammy
 
-  let self = this
+  const self = this
 
   function isBlankFrame (frame, _pixTolerance, _frameTolerance) {
-    let localCanvas = document.createElement('canvas')
+    const localCanvas = document.createElement('canvas')
     localCanvas.width = canvas.width
     localCanvas.height = canvas.height
-    let context2d = localCanvas.getContext('2d')
+    const context2d = localCanvas.getContext('2d')
 
-    let sampleColor = {
+    const sampleColor = {
       r: 0,
       g: 0,
       b: 0
     }
-    let maxColorDifference = Math.sqrt(
+    const maxColorDifference = Math.sqrt(
       Math.pow(255, 2) +
       Math.pow(255, 2) +
       Math.pow(255, 2)
     )
-    let pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0
-    let frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0
+    const pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0
+    const frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0
 
     let matchPixCount, endPixCheck, maxPixCount
 
-    let image = new Image()
+    const image = new Image()
     image.src = frame.image
     context2d.drawImage(image, 0, 0, canvas.width, canvas.height)
-    let imageData = context2d.getImageData(0, 0, canvas.width, canvas.height)
+    const imageData = context2d.getImageData(0, 0, canvas.width, canvas.height)
     matchPixCount = 0
     endPixCheck = imageData.data.length
     maxPixCount = imageData.data.length / 4
 
     for (let pix = 0; pix < endPixCheck; pix += 4) {
-      let currentColor = {
+      const currentColor = {
         r: imageData.data[pix],
         g: imageData.data[pix + 1],
         b: imageData.data[pix + 2]
       }
-      let colorDifference = Math.sqrt(
+      const colorDifference = Math.sqrt(
         Math.pow(currentColor.r - sampleColor.r, 2) +
         Math.pow(currentColor.g - sampleColor.g, 2) +
         Math.pow(currentColor.b - sampleColor.b, 2)
@@ -1868,48 +1879,48 @@ function WhammyRecorderHelper (mediaStream, root) {
   }
 
   function dropBlackFrames (_frames, _framesToCheck, _pixTolerance, _frameTolerance) {
-    let localCanvas = document.createElement('canvas')
+    const localCanvas = document.createElement('canvas')
     localCanvas.width = canvas.width
     localCanvas.height = canvas.height
-    let context2d = localCanvas.getContext('2d')
+    const context2d = localCanvas.getContext('2d')
     let resultFrames = []
 
-    let checkUntilNotBlack = _framesToCheck === -1
-    let endCheckFrame = (_framesToCheck && _framesToCheck > 0 && _framesToCheck <= _frames.length)
+    const checkUntilNotBlack = _framesToCheck === -1
+    const endCheckFrame = (_framesToCheck && _framesToCheck > 0 && _framesToCheck <= _frames.length)
       ? _framesToCheck : _frames.length
-    let sampleColor = {
+    const sampleColor = {
       r: 0,
       g: 0,
       b: 0
     }
-    let maxColorDifference = Math.sqrt(
+    const maxColorDifference = Math.sqrt(
       Math.pow(255, 2) +
       Math.pow(255, 2) +
       Math.pow(255, 2)
     )
-    let pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0
-    let frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0
+    const pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0
+    const frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0
     let doNotCheckNext = false
 
     for (let f = 0; f < endCheckFrame; f++) {
       let matchPixCount, endPixCheck, maxPixCount
 
       if (!doNotCheckNext) {
-        let image = new Image()
+        const image = new Image()
         image.src = _frames[f].image
         context2d.drawImage(image, 0, 0, canvas.width, canvas.height)
-        let imageData = context2d.getImageData(0, 0, canvas.width, canvas.height)
+        const imageData = context2d.getImageData(0, 0, canvas.width, canvas.height)
         matchPixCount = 0
         endPixCheck = imageData.data.length
         maxPixCount = imageData.data.length / 4
 
         for (let pix = 0; pix < endPixCheck; pix += 4) {
-          let currentColor = {
+          const currentColor = {
             r: imageData.data[pix],
             g: imageData.data[pix + 1],
             b: imageData.data[pix + 2]
           }
-          let colorDifference = Math.sqrt(
+          const colorDifference = Math.sqrt(
             Math.pow(currentColor.r - sampleColor.r, 2) +
             Math.pow(currentColor.g - sampleColor.g, 2) +
             Math.pow(currentColor.b - sampleColor.b, 2)
@@ -1973,8 +1984,8 @@ function GifRecorder (mediaStream) {
   this.start = function (timeSlice) {
     timeSlice = timeSlice || 1000
 
-    let imageWidth = this.videoWidth || 320
-    let imageHeight = this.videoHeight || 240
+    const imageWidth = this.videoWidth || 320
+    const imageHeight = this.videoHeight || 240
 
     canvas.width = video.width = imageWidth
     canvas.height = video.height = imageHeight
@@ -2047,7 +2058,7 @@ function GifRecorder (mediaStream) {
   function doneRecording () {
     endTime = Date.now()
 
-    let gifBlob = new Blob([new Uint8Array(gifEncoder.stream().bin)], {
+    const gifBlob = new Blob([new Uint8Array(gifEncoder.stream().bin)], {
       type: 'image/gif'
     })
     self.ondataavailable(gifBlob)
@@ -2081,12 +2092,12 @@ function GifRecorder (mediaStream) {
   this.onstop = function () {}
 
   // Reference to itself
-  let self = this
+  const self = this
 
-  let canvas = document.createElement('canvas')
-  let context = canvas.getContext('2d')
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
 
-  let video = document.createElement('video')
+  const video = document.createElement('video')
   video.muted = true
   video.autoplay = true
   video.src = URL.createObjectURL(mediaStream)
@@ -2122,7 +2133,7 @@ if (typeof MediaStreamRecorder !== 'undefined') {
  * let output = recorder.compile();
  */
 
-let Whammy = (function () {
+const Whammy = (function () {
   // a more abstract-ish API
 
   function WhammyVideo (duration, quality) {
@@ -2163,27 +2174,27 @@ let Whammy = (function () {
   }
 
   function processInWebWorker (_function) {
-    let blob = URL.createObjectURL(new Blob([_function.toString(),
+    const blob = URL.createObjectURL(new Blob([_function.toString(),
       'this.onmessage =  function (e) {' + _function.name + '(e.data);}'
     ], {
       type: 'application/javascript'
     }))
 
-    let worker = new Worker(blob)
+    const worker = new Worker(blob)
     URL.revokeObjectURL(blob)
     return worker
   }
 
   function whammyInWebWorker (frames) {
     function ArrayToWebM (frames) {
-      let info = checkFrames(frames)
+      const info = checkFrames(frames)
       if (!info) {
         return []
       }
 
-      let clusterMaxDuration = 30000
+      const clusterMaxDuration = 30000
 
-      let EBML = [{
+      const EBML = [{
         id: 0x1a45dfa3, // EBML
         data: [{
           data: 1,
@@ -2267,7 +2278,7 @@ let Whammy = (function () {
       let frameNumber = 0
       let clusterTimecode = 0
       while (frameNumber < frames.length) {
-        let clusterFrames = []
+        const clusterFrames = []
         let clusterDuration = 0
         do {
           clusterFrames.push(frames[frameNumber])
@@ -2275,8 +2286,8 @@ let Whammy = (function () {
           frameNumber++
         } while (frameNumber < frames.length && clusterDuration < clusterMaxDuration)
 
-        let clusterCounter = 0
-        let cluster = {
+        const clusterCounter = 0
+        const cluster = {
           id: 0x1f43b675, // Cluster
           data: getClusterData(clusterTimecode, clusterCounter, clusterFrames)
         } // Add cluster to segment
@@ -2292,7 +2303,7 @@ let Whammy = (function () {
         data: clusterTimecode,
         id: 0xe7 // Timecode
       }].concat(clusterFrames.map(function (webp) {
-        let block = makeSimpleBlock({
+        const block = makeSimpleBlock({
           discardable: 0,
           frame: webp.data.slice(4),
           invisible: 0,
@@ -2319,8 +2330,8 @@ let Whammy = (function () {
         return
       }
 
-      let width = frames[0].width
-      let height = frames[0].height
+      const width = frames[0].width
+      const height = frames[0].height
       let duration = frames[0].duration
 
       for (let i = 1; i < frames.length; i++) {
@@ -2334,7 +2345,7 @@ let Whammy = (function () {
     }
 
     function numToBuffer (num) {
-      let parts = []
+      const parts = []
       while (num > 0) {
         parts.push(num & 0xff)
         num = num >> 8
@@ -2349,8 +2360,8 @@ let Whammy = (function () {
     }
 
     function bitsToBuffer (bits) {
-      let data = []
-      let pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : ''
+      const data = []
+      const pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : ''
       bits = pad + bits
       for (let i = 0; i < bits.length; i += 8) {
         data.push(parseInt(bits.substr(i, 8), 2))
@@ -2359,7 +2370,7 @@ let Whammy = (function () {
     }
 
     function generateEBML (json) {
-      let ebml = []
+      const ebml = []
       for (let i = 0; i < json.length; i++) {
         let data = json[i].data
 
@@ -2375,11 +2386,11 @@ let Whammy = (function () {
           data = strToBuffer(data)
         }
 
-        let len = data.size || data.byteLength || data.length
-        let zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8)
-        let sizeToString = len.toString(2)
-        let padded = (new Array((zeroes * 7 + 7 + 1) - sizeToString.length)).join('0') + sizeToString
-        let size = (new Array(zeroes)).join('0') + '1' + padded
+        const len = data.size || data.byteLength || data.length
+        const zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8)
+        const sizeToString = len.toString(2)
+        const padded = (new Array((zeroes * 7 + 7 + 1) - sizeToString.length)).join('0') + sizeToString
+        const size = (new Array(zeroes)).join('0') + '1' + padded
 
         ebml.push(numToBuffer(json[i].id))
         ebml.push(bitsToBuffer(size))
@@ -2387,13 +2398,13 @@ let Whammy = (function () {
       }
 
       return new Blob(ebml, {
-        type: 'video/webm;codecs=h264'
+        type: 'video/webm;codecs=vp8'
       })
     }
 
     function toBinStrOld (bits) {
       let data = ''
-      let pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : ''
+      const pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : ''
       bits = pad + bits
       for (let i = 0; i < bits.length; i += 8) {
         data += String.fromCharCode(parseInt(bits.substr(i, 8), 2))
@@ -2424,7 +2435,7 @@ let Whammy = (function () {
         throw 'TrackNumber > 127 not supported'
       }
 
-      let out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags].map(function (e) {
+      const out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags].map(function (e) {
         return String.fromCharCode(e)
       }).join('') + data.frame
 
@@ -2432,9 +2443,9 @@ let Whammy = (function () {
     }
 
     function parseWebP (riff) {
-      let VP8 = riff.RIFF[0].WEBP[0]
+      const VP8 = riff.RIFF[0].WEBP[0]
 
-      let frameStart = VP8.indexOf('\x9d\x01\x2a') // A VP8 keyframe starts with the 0x9d012a header
+      const frameStart = VP8.indexOf('\x9d\x01\x2a') // A VP8 keyframe starts with the 0x9d012a header
       for (let i = 0, c = []; i < 4; i++) {
         c[i] = VP8.charCodeAt(frameStart + 3 + i)
       }
@@ -2456,19 +2467,19 @@ let Whammy = (function () {
 
     function getStrLength (string, offset) {
       return parseInt(string.substr(offset + 4, 4).split('').map(function (i) {
-        let unpadded = i.charCodeAt(0).toString(2)
+        const unpadded = i.charCodeAt(0).toString(2)
         return (new Array(8 - unpadded.length + 1)).join('0') + unpadded
       }).join(''), 2)
     }
 
     function parseRIFF (string) {
       let offset = 0
-      let chunks = {}
+      const chunks = {}
 
       while (offset < string.length) {
-        let id = string.substr(offset, 4)
-        let len = getStrLength(string, offset)
-        let data = string.substr(offset + 4 + 4, len)
+        const id = string.substr(offset, 4)
+        const len = getStrLength(string, offset)
+        const data = string.substr(offset + 4 + 4, len)
         offset += 4 + 4 + len
         chunks[id] = chunks[id] || []
 
@@ -2488,8 +2499,8 @@ let Whammy = (function () {
       }).reverse().join('')
     }
 
-    let webm = new ArrayToWebM(frames.map(function (frame) {
-      let webp = parseWebP(parseRIFF(atob(frame.image.slice(23))))
+    const webm = new ArrayToWebM(frames.map(function (frame) {
+      const webp = parseWebP(parseRIFF(atob(frame.image.slice(23))))
       webp.duration = frame.duration
       return webp
     }))
@@ -2509,7 +2520,7 @@ let Whammy = (function () {
    * });
    */
   WhammyVideo.prototype.compile = function (callback) {
-    let webWorker = processInWebWorker(whammyInWebWorker)
+    const webWorker = processInWebWorker(whammyInWebWorker)
 
     webWorker.onmessage = function (event) {
       if (event.data.error) {
@@ -2548,7 +2559,6 @@ if (typeof MediaStreamRecorder !== 'undefined') {
 // MIT License  - www.WebRTC-Experiment.com/licence
 // Source Code  - https://github.com/muaz-khan/ConcatenateBlobs
 // Demo         - https://www.WebRTC-Experiment.com/ConcatenateBlobs/
-
 // ___________________
 // ConcatenateBlobs.js
 
@@ -2557,15 +2567,15 @@ if (typeof MediaStreamRecorder !== 'undefined') {
 
 (function () {
   window.ConcatenateBlobs = function (blobs, type, callback) {
-    let buffers = []
+    var buffers = []
 
-    let index = 0
+    var index = 0
 
     function readAsArrayBuffer () {
       if (!blobs[index]) {
         return concatenateBuffers()
       }
-      let reader = new FileReader()
+      var reader = new window.FileReader()
       reader.onload = function (event) {
         buffers.push(event.target.result)
         index++
@@ -2577,24 +2587,24 @@ if (typeof MediaStreamRecorder !== 'undefined') {
     readAsArrayBuffer()
 
     function concatenateBuffers () {
-      let byteLength = 0
+      var byteLength = 0
       buffers.forEach(function (buffer) {
         byteLength += buffer.byteLength
       })
 
-      let tmp = new Uint16Array(byteLength)
-      let lastOffset = 0
+      var tmp = new Uint16Array(byteLength)
+      var lastOffset = 0
       buffers.forEach(function (buffer) {
         // BYTES_PER_ELEMENT == 2 for Uint16Array
-        let reusableByteLength = buffer.byteLength
-        if (reusableByteLength % 2 != 0) {
+        var reusableByteLength = buffer.byteLength
+        if (reusableByteLength % 2 !== 0) {
           buffer = buffer.slice(0, reusableByteLength - 1)
         }
         tmp.set(new Uint16Array(buffer), lastOffset)
         lastOffset += reusableByteLength
       })
 
-      let blob = new Blob([tmp.buffer], {
+      var blob = new window.Blob([tmp.buffer], {
         type: type
       })
 
@@ -2608,8 +2618,8 @@ if (typeof module !== 'undefined' /* && !!module.exports */) {
   module.exports = MediaStreamRecorder
 }
 
-if (typeof define === 'function' && define.amd) {
-  define('MediaStreamRecorder', [], function () {
+if (typeof define === 'function' && window.define.amd) {
+  window.define('MediaStreamRecorder', [], function () {
     return MediaStreamRecorder
   })
 }
